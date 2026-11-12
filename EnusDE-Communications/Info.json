@@ -1,0 +1,23 @@
+{
+  "identifier": "enusde/communications",
+  "version": "0.6.7",
+  "name": "EnusDE Communications",
+  "author": "EnusDE",
+  "license": "MIT",
+  "description": "Railroader 0.6.2 chat with global/crew/train message templates, crew work coordination and persistent two-way dispatcher conversations. Includes a local host role test and opt-in performance reports. Optional language integration; native settings. Test version.",
+  "scope": "optional",
+  "assemblies": [
+    "EnusDE.Communications.dll"
+  ],
+  "dependencies": {
+    "required": [
+      "rr/game ==0.6.2"
+    ]
+  },
+  "load": {
+    "after": [
+      "enusde/german-translation"
+    ],
+    "priority": 200
+  }
+}
