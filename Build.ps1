@@ -23,7 +23,7 @@ $modStage=Join-Path $staging 'EnusDE-Communications';$null=New-Item -ItemType Di
 Copy-Item -LiteralPath (Join-Path $pack 'Info.json') -Destination $modStage
 Copy-Item -LiteralPath (Join-Path $pack 'Languages') -Destination $modStage -Recurse
 Copy-Item -LiteralPath $dll,$harmony -Destination $modStage
-$modDocuments=@('README.md','BUILDING.md','PERFORMANCE.md','MESSAGE-BUILDER.md','ROLE-TEST.md','VOICE.md','RELEASE-NOTES-0.6.8.md','LICENSE','THIRD-PARTY-NOTICES.txt')
+$modDocuments=@('README.md','BUILDING.md','WORKFLOW.md','PERFORMANCE.md','MESSAGE-BUILDER.md','ROLE-TEST.md','VOICE.md','RELEASE-NOTES-0.6.9.md','LICENSE','THIRD-PARTY-NOTICES.txt')
 foreach($name in $modDocuments){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $modStage}
 $binaryZip=Join-Path $OutputDirectory ('EnusDE-Communications-v'+$manifest.version+'.zip');Compress-Archive -LiteralPath $modStage -DestinationPath $binaryZip -Force
 $sourceStage=Join-Path $staging 'EnusDE-Communications-Source';$null=New-Item -ItemType Directory -Path $sourceStage -Force
@@ -32,6 +32,6 @@ $dependencyStage=Join-Path $sourceStage 'dependencies';$null=New-Item -ItemType 
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'dependencies\Harmony') -Destination $dependencyStage -Recurse
 $testStage=Join-Path $sourceStage 'tests';$null=New-Item -ItemType Directory -Path $testStage -Force
 Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'tests') -File | Where-Object Extension -In @('.cs','.ps1') | Copy-Item -Destination $testStage
-foreach($name in ($modDocuments+@('Build.ps1','Test.ps1','Test-Native.ps1','.gitignore','.gitattributes'))){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $sourceStage}
+foreach($name in ($modDocuments+@('Build.ps1','Build-Local.cmd','Build-Local.ps1','Test.ps1','Test-Native.ps1','AGENTS.md','.gitignore','.gitattributes'))){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $sourceStage}
 $sourceZip=Join-Path $OutputDirectory ('EnusDE-Communications-Source-v'+$manifest.version+'.zip');Compress-Archive -LiteralPath $sourceStage -DestinationPath $sourceZip -Force
 Get-Item -LiteralPath $binaryZip,$sourceZip | Select-Object Name,Length

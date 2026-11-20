@@ -1,6 +1,7 @@
 // Test-only stand-ins for the Unity/Harmony boundary. Not compiled into the mod.
 using System;
 using System.Reflection;
+using System.Reflection.Emit;
 namespace UnityEngine
 {
     public enum FindObjectsSortMode { None }
@@ -20,8 +21,19 @@ namespace HarmonyLib
 {
     public static class AccessTools
     {
-        public static Type AvailableType;
-        public static Type TypeByName(string name)=>AvailableType;
+        static Type availableType;
+        public static int BroadLookups;
+        public static Type AvailableType
+        {
+            get=>availableType;
+            set
+            {
+                availableType=value;
+                // Simulate the assembly-load notification accompanying a newly available mod.
+                AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("LanguageTest"+Guid.NewGuid().ToString("N")),AssemblyBuilderAccess.Run);
+            }
+        }
+        public static Type TypeByName(string name){BroadLookups++;return AvailableType;}
         public static FieldInfo Field(Type type,string name)=>type.GetField(name,BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance|BindingFlags.Static);
         public static MethodInfo Method(Type type,string name,Type[] args)=>type.GetMethod(name,BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance|BindingFlags.Static,null,args,null);
     }
@@ -30,6 +42,22 @@ namespace HarmonyLib
     {
         public bool FailPatch;public int Patches;
         public void Patch(MethodInfo method,HarmonyMethod prefix){Patches++;if(FailPatch)throw new InvalidOperationException("Optional translator changed");}
+    }
+}
+public sealed class LanguageTestAssembly:Assembly
+{
+    public int ExactLookups;
+    public int FullEnumerations;
+    public override Type GetType(string name,bool throwOnError,bool ignoreCase)
+    {
+        ExactLookups++;
+        if(name!="EnusDE.GermanUi.GermanUiBehaviour")throw new Exception("Unexpected type lookup");
+        return HarmonyLib.AccessTools.AvailableType;
+    }
+    public override Type[] GetTypes()
+    {
+        FullEnumerations++;
+        throw new Exception("Optional language discovery must not enumerate all types");
     }
 }
 public sealed class FakeLanguageSettings {public string language="de";}

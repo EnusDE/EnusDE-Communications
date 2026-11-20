@@ -1,5 +1,7 @@
 # Build and test EnusDE Communications
 
+On Windows, double-click **Build-Local.cmd** to find the installed game, build the mod, run automated checks and open the install ZIP in Explorer. See [the local and Cloud workflow](WORKFLOW.md) for the GitHub Desktop steps. The .NET 8 SDK is required.
+
 You need PowerShell 7, the .NET 8 SDK, and the managed reference assemblies from Railroader **0.6.3**. On Windows, use the game directory that contains `Railroader.exe` and `Railroader_Data`. In Steam, you can find it through the game's **Manage → Browse local files** menu. Compilation and automated tests also run on Linux when the supplied game directory contains `Railroader_Data/Managed`; running the game itself requires the full installation.
 
 The build uses reference assemblies from that installation and the vendored Harmony 2.3.6 library in `dependencies/Harmony`. See [third-party notices](THIRD-PARTY-NOTICES.txt).

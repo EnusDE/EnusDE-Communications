@@ -42,7 +42,7 @@ namespace EnusDE.Communications
         {if(ActiveRuntime!=source)return;if(!SettingsOpen)bindings?.EnsureEnabled();bindings?.Sample(Time.frameCount,Application.isFocused&&!SettingsOpen);}
         public void OnModLoad(IModContext context)
         {
-            if(typeof(Game.State.StateManager).Module.ModuleVersionId!=new Guid("aac29a8a-ef90-41c1-b17a-0d75169dc6b8"))throw new NotSupportedException("EnusDE Communications 0.6.8 requires the Railroader 0.6.3 build it was compiled against.");
+            if(typeof(Game.State.StateManager).Module.ModuleVersionId!=new Guid("aac29a8a-ef90-41c1-b17a-0d75169dc6b8"))throw new NotSupportedException("EnusDE Communications 0.6.9 requires the Railroader 0.6.3 build it was compiled against.");
             active=this;Log=context.Log;DataDirectory=Path.Combine(context.ModDirectory,"Data");Directory.CreateDirectory(DataDirectory);settingsPath=ModSettings.ForHome(Game.HomeDirectory.UserPaths.RailroaderDirectory);
             try{Settings=ModSettings.LoadUser(Game.HomeDirectory.UserPaths.RailroaderDirectory,context.ModDirectory);}catch(Exception error){Settings=new ModSettings();Log.Warning("Using default communication settings: "+error.Message);}
             harmony=new Harmony(PatchId);Text=new Localization(context.ModDirectory,harmony,message=>Log.Warning(message));
@@ -58,7 +58,7 @@ namespace EnusDE.Communications
             harmony.Patch(AccessTools.Method(typeof(Game.State.StateManager),"HandleCharacterMessage",new[]{typeof(Game.Messages.ICharacterMessage),typeof(Game.IPlayer)}),postfix:new HarmonyMethod(typeof(Entry),nameof(AfterNativeConsole)));
             nativeSettings=new NativeSettings(this);nativeSettings.Register();
             Archive=new HostArchive(Path.Combine(DataDirectory,"HostArchive"));maintenance=new GameObject("EnusDE.Communications.ArchiveMaintenance");UnityEngine.Object.DontDestroyOnLoad(maintenance);maintenance.AddComponent<ArchiveMaintenance>().Initialize(this);
-            Log.Info("EnusDE Communications 0.6.8 loaded. Settings: Preferences > Mods > EnusDE Communications. No separate menu dependency. User settings: "+settingsPath+". Optional multiplayer participation. Steam channel 189731.");
+            Log.Info("EnusDE Communications 0.6.9 loaded. Settings: Preferences > Mods > EnusDE Communications. No separate menu dependency. User settings: "+settingsPath+". Optional multiplayer participation. Steam channel 189731.");
         }
         public void OnWorldLoad()
         {
@@ -68,7 +68,7 @@ namespace EnusDE.Communications
         public void OnWorldUnload()
         {StopRoleTest();Runtime?.Voice?.Dispose();if(Performance.Recording)ExportPerformance();map?.Disable();if(root!=null)UnityEngine.Object.Destroy(root);root=null;Runtime=null;NativeDock.Clear();GameAdapter.Clear();GameMenus.Clear();}
         public void OnModUnload()
-        {OnWorldUnload();if(maintenance!=null)UnityEngine.Object.Destroy(maintenance);maintenance=null;nativeSettings?.Dispose();nativeSettings=null;harmony?.UnpatchAll(PatchId);harmony=null;bindings?.Dispose();bindings=null;map=null;if(active==this)active=null;}
+        {OnWorldUnload();if(maintenance!=null)UnityEngine.Object.Destroy(maintenance);maintenance=null;nativeSettings?.Dispose();nativeSettings=null;Text?.Dispose();Text=null;harmony?.UnpatchAll(PatchId);harmony=null;bindings?.Dispose();bindings=null;map=null;if(active==this)active=null;}
         internal void Save(bool refresh=true)
         {try{Settings.Write(settingsPath);Runtime?.Voice?.SettingsChanged();if(refresh){Runtime?.UI?.ApplySettings();TestRuntime?.UI?.ApplySettings();}}catch(Exception error){Log.Warning("Communication settings could not be saved: "+error.Message);ActiveRuntime?.UI?.Toast(Text.Get("save_failed"));}}
         internal void SetChatBinding(string path)

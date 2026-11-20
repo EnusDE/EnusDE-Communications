@@ -4,31 +4,65 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading;
 using HarmonyLib;
 using Newtonsoft.Json;
 using UnityEngine;
 namespace EnusDE.Communications
 {
     public sealed class CommsOwnedText:MonoBehaviour { }
-    internal sealed class Localization
+    internal sealed class Localization:IDisposable
     {
         readonly string folder;
         readonly Harmony harmony;
         readonly Action<string> warning;
         readonly HashSet<MethodInfo> guarded=new HashSet<MethodInfo>();
+        readonly Func<Assembly[]> loadedAssemblies;
+        int assemblyRevision;
+        int inspectedRevision=-1;
+        Type languageSourceType;
+        bool disposed;
         Dictionary<string,string> english=new Dictionary<string,string>(),localized=new Dictionary<string,string>();
         object behaviour;FieldInfo settingsField,languageField;
         bool reported;
         string current;
-        public Localization(string path,Harmony harmony,Action<string> log=null)
+        public Localization(string path,Harmony harmony,Action<string> log=null,Func<Assembly[]> loadedAssemblies=null)
         {
-            this.harmony=harmony;warning=log;folder=Path.Combine(path,"Languages");english=Read("en");Refresh();
+            this.harmony=harmony;warning=log;folder=Path.Combine(path,"Languages");english=Read("en");
+            this.loadedAssemblies=loadedAssemblies??AppDomain.CurrentDomain.GetAssemblies;
+            AppDomain.CurrentDomain.AssemblyLoad+=OnAssemblyLoad;
+            Refresh();
+        }
+        void OnAssemblyLoad(object sender,AssemblyLoadEventArgs args)
+        {
+            // Assembly loading can occur off the game thread. Resolve types on Refresh only.
+            Interlocked.Increment(ref assemblyRevision);
+        }
+        Type FindLanguageSourceType()
+        {
+            if(languageSourceType!=null)return languageSourceType;
+            int revision=Volatile.Read(ref assemblyRevision);
+            if(inspectedRevision==revision)return null;
+            inspectedRevision=revision;
+            foreach(var assembly in loadedAssemblies())
+            {
+                var type=assembly.GetType("EnusDE.GermanUi.GermanUiBehaviour",false);
+                if(type!=null){languageSourceType=type;return type;}
+            }
+            return null;
+        }
+        public void Dispose()
+        {
+            if(disposed)return;
+            disposed=true;
+            AppDomain.CurrentDomain.AssemblyLoad-=OnAssemblyLoad;
+            behaviour=null;
         }
         void FindLanguageSource()
         {
             if(behaviour is UnityEngine.Object existing&&existing!=null)return;
             behaviour=null;settingsField=null;languageField=null;
-            var type=AccessTools.TypeByName("EnusDE.GermanUi.GermanUiBehaviour");
+            var type=FindLanguageSourceType();
             if(type!=null)
             {
                 settingsField=AccessTools.Field(type,"settings");
