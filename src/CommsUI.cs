@@ -23,14 +23,15 @@ namespace EnusDE.Communications
         string channel="train",thread,replyMessageId,pendingReplyRequest,popupKind,lastCandidate;bool dirty=true,layoutDirty,historyFocus,drawMessages=true,cursorOwned;CursorLockMode previousLock;bool previousVisible;
         float toastUntil,nextDock,nextHud,nextPopupRefresh,toolbarExtra;Action popupRefresh;Vector2 lastResolution;double previousTime;
         public bool Dragging;
+        bool photoHudHidden;
         bool dispatchAsOperator;
         Button dispatchAcknowledge;
         RectTransform roleTestBar;TMP_Text roleTestLabel,voiceLabel;
         internal double FadeClock {get;private set;}
         internal float Scale=>canvas!=null?canvas.scaleFactor:1;
         internal bool WheelOpen=>actionMenu?.Active==true;
-        internal bool ChatShown=>runtime.IsRoleTest||ChatVisibility.IsVisible(GameAdapter.MultiplayerActive,drawMessages);
-        internal bool Captures=>!runtime.DiagnosticSuspended&&(Dragging||WheelOpen||popup!=null||historyFocus||OwnTextFocused());
+        internal bool ChatShown=>!UI.UIStateArbiter.PhotoModeActive&&(runtime.IsRoleTest||ChatVisibility.IsVisible(GameAdapter.MultiplayerActive,drawMessages));
+        internal bool Captures=>!UI.UIStateArbiter.PhotoModeActive&&!runtime.DiagnosticSuspended&&(Dragging||WheelOpen||popup!=null||historyFocus||OwnTextFocused());
         string T(string key)=>entry.Text.Get(key);
         internal void Initialize(CommsRuntime owner)
         {
@@ -47,12 +48,22 @@ namespace EnusDE.Communications
         {
             var s=entry.Settings;chat=f.Rect("chat",root,s.ChatX,0,s.ChatWidth,s.ChatHeight+56);chat.anchorMin=chat.anchorMax=Vector2.zero;chat.pivot=Vector2.zero;chat.anchoredPosition=new Vector2(s.ChatX,s.ChatY);
             f.Background(chat,new Color(s.BackgroundR,s.BackgroundG,s.BackgroundB,s.BackgroundOpacity)).raycastTarget=false;
-            target=f.Text(chat,T("no_train"),8,s.ChatHeight+2,s.ChatWidth-106,20,13);
+            target=f.Text(chat,T("no_train"),8,s.ChatHeight+2,s.ChatWidth-(s.ChatUnlocked?130:106),20,13);
             var quick=f.Button(chat,T("wheel_short"),s.ChatWidth-85,s.ChatHeight+2,56,20,TryWheel,true);
             quick.gameObject.AddComponent<UI.Tooltips.UITooltipProvider>().DynamicTooltipInfo=()=>new TooltipInfo(T("wheel_title"),T("wheel_hint"));
             var handle=f.Button(chat,"+",s.ChatWidth-25,s.ChatHeight+2,25,20,()=>{draftRecipient=channel;ShowMessageBuilder();},true);
             handle.gameObject.AddComponent<UI.Tooltips.UITooltipProvider>().DynamicTooltipInfo=()=>new TooltipInfo(T("builder_title"),T("builder_open_hint"));
-            var drag=handle.gameObject.AddComponent<CommsDrag>();drag.Target=chat;drag.Owner=this;drag.Done=SaveChatPosition;
+            if(s.ChatUnlocked)
+            {
+                var grip=f.Rect("chat drag handle",chat,s.ChatWidth-112,s.ChatHeight+2,24,20);
+                f.Background(grip,UiFactory.WheelBrown);
+                f.Text(grip,"::",0,0,24,20,15).alignment=TextAlignmentOptions.Center;
+                grip.gameObject.AddComponent<UI.Tooltips.UITooltipProvider>().DynamicTooltipInfo=()=>new TooltipInfo(T("chat_unlock"),T("chat_drag_hint"));
+                var drag=grip.gameObject.AddComponent<CommsDrag>();
+                drag.Target=chat;
+                drag.Owner=this;
+                drag.Done=()=>{RememberChatPosition();entry.Save(false);};
+            }
             viewport=f.Rect("messages",chat,6,0,s.ChatWidth-12,s.ChatHeight);chatHit=f.Background(viewport,Color.clear);viewport.gameObject.AddComponent<RectMask2D>();
             scroll=viewport.gameObject.AddComponent<ScrollRect>();scroll.viewport=viewport;scroll.horizontal=false;scroll.vertical=true;scroll.movementType=ScrollRect.MovementType.Clamped;scroll.scrollSensitivity=25;
             content=f.Rect("rows",viewport,0,0,s.ChatWidth-12,s.ChatHeight);scroll.content=content;
@@ -91,7 +102,21 @@ namespace EnusDE.Communications
             topButton.gameObject.AddComponent<UI.Tooltips.UITooltipProvider>().DynamicTooltipInfo=()=>new TooltipInfo(T("communications"),T("chat_icon_hint"));
             top.gameObject.SetActive(false);
         }
-        void SaveChatPosition(){entry.Settings.ChatX=chat.anchoredPosition.x;entry.Settings.ChatY=chat.anchoredPosition.y;entry.Settings.AutoDock=false;entry.Save(false);}
+        internal void RememberChatPosition()
+        {
+            if(chat==null)return;
+            entry.Settings.ChatX=chat.anchoredPosition.x;
+            entry.Settings.ChatY=chat.anchoredPosition.y;
+        }
+
+        void ApplyDockPosition()
+        {
+            if(!entry.Settings.AutoDock)return;
+            bool right=entry.Settings.ChatDockRight;
+            chat.anchoredPosition=new Vector2(right?Math.Max(0,root.rect.width-chat.rect.width):0,
+                right?8:NativeDock.ChatBottom(root));
+            Clamp(chat);
+        }
         internal void WindowMoved(RectTransform window)
         {
             if(window==dispatch||window==popup&&popupKind=="dispatch"){entry.Settings.DispatchX=window.anchoredPosition.x;entry.Settings.DispatchY=-window.anchoredPosition.y;}
@@ -104,9 +129,9 @@ namespace EnusDE.Communications
         {
             using var measurement=entry.Performance.Measure(PerformanceStage.Rebuild);
             string draft=input?.text,activeThread=thread,activeReply=replyMessageId,dispatchDraft=dispatchInput?.text;bool compose=inputBox!=null&&inputBox.gameObject.activeSelf,reading=historyFocus,operatorThread=dispatchAsOperator;
-            layoutDirty=false;CancelWheel();ClosePopup();CloseDispatch();DetachTop();
-            foreach(var old in new[]{chat,top,status?.rectTransform})if(old!=null){old.gameObject.SetActive(false);Destroy(old.gameObject);}
-            visibleRows.Clear();timelineSignature=null;BuildChat();BuildTop();input.text=draft??"";SetCompose(compose);historyFocus=reading;if(reading)input.ActivateInputField();Clamp(chat);dirty=true;nextHud=nextDock=0;
+            layoutDirty=false;Dragging=false;CancelWheel();ClosePopup();CloseDispatch();DetachTop();
+            foreach(var old in new[]{chat,top,status?.rectTransform,voiceLabel?.rectTransform})if(old!=null){old.gameObject.SetActive(false);Destroy(old.gameObject);}
+            visibleRows.Clear();timelineSignature=null;BuildChat();BuildTop();input.text=draft??"";SetCompose(compose);historyFocus=reading;if(reading)input.ActivateInputField();ApplyDockPosition();Clamp(chat);dirty=true;nextHud=nextDock=0;
             if(activeReply!=null)ShowReply(activeReply);else if(activeThread!=null&&(operatorThread||runtime.Client.State?.Dispatcher==true))ShowConversation(activeThread,operatorThread);
             if(dispatchInput!=null)dispatchInput.text=dispatchDraft??"";
         }
@@ -188,7 +213,18 @@ namespace EnusDE.Communications
         void LateUpdate()
         {
             if(canvasObject==null||!runtime.Active)return;
-            if(entry.RoleTestActive&&!runtime.IsRoleTest||runtime.DiagnosticSuspended){canvas.enabled=false;if(toolbarCanvas!=null)toolbarCanvas.enabled=false;raycaster.enabled=false;if(toolbarRaycaster!=null)toolbarRaycaster.enabled=false;return;}
+            bool photoMode=UI.UIStateArbiter.PhotoModeActive;
+            if(photoMode&&!photoHudHidden)
+            {
+                CancelWheel();
+                Dragging=historyFocus=false;
+                input.DeactivateInputField();
+                dispatchInput?.DeactivateInputField();
+                var selected=EventSystem.current?.currentSelectedGameObject;
+                if(selected!=null&&selected.GetComponentInParent<CommsOwnedText>()!=null)EventSystem.current.SetSelectedGameObject(null);
+            }
+            photoHudHidden=photoMode;
+            if(photoMode||entry.RoleTestActive&&!runtime.IsRoleTest||runtime.DiagnosticSuspended){canvas.enabled=false;if(toolbarCanvas!=null)toolbarCanvas.enabled=false;raycaster.enabled=false;if(toolbarRaycaster!=null)toolbarRaycaster.enabled=false;return;}
             using var measurement=entry.Performance.Measure(PerformanceStage.UI);
             // Native windows cover only their own area. Free chat controls remain interactive.
             if(voiceLabel!=null)voiceLabel.text=!runtime.IsRoleTest&&entry.Settings.VoiceEnabled?entry.VoiceStatus:"";
@@ -205,10 +241,10 @@ namespace EnusDE.Communications
             if(dirty&&!pressed&&!Dragging)Rebuild();
             foreach(var row in visibleRows){float alpha=ChatPresentation.Opacity(row.Item2.Received,FadeClock,entry.Settings.FadeSeconds,historyFocus);if(Math.Abs(row.Item1.alpha-alpha)>.002f)row.Item1.alpha=alpha;row.Item1.blocksRaycasts=alpha>.01f;}
             if(Time.realtimeSinceStartup>toastUntil)status.text="";
-            var size=root.rect.size;if(size!=lastResolution){lastResolution=size;Clamp(chat);if(dispatch!=null)Clamp(dispatch);if(popup!=null)Clamp(popup);}
+            var size=root.rect.size;if(size!=lastResolution){lastResolution=size;ApplyDockPosition();Clamp(chat);if(dispatch!=null)Clamp(dispatch);if(popup!=null)Clamp(popup);}
             if(!runtime.IsRoleTest){if(Time.realtimeSinceStartup>=nextDock){DockTop();nextDock=Time.realtimeSinceStartup+2;}AlignTopToSlot();}
             if(roleTestLabel!=null)roleTestLabel.text=T("test_active")+" · "+T(runtime.RoleTest.Role==TestChatRole.Driver?"test_driver":runtime.RoleTest.Role==TestChatRole.Dispatcher?"test_dispatcher":"test_admin");
-            string candidate=GameAdapter.Candidate();if(Time.realtimeSinceStartup>=nextHud||candidate!=lastCandidate){if(ChatShown&&entry.Settings.AutoDock&&!Dragging&&!pressed){chat.anchoredPosition=new Vector2(entry.Settings.ChatX,NativeDock.ChatBottom(root));Clamp(chat);}lastCandidate=candidate;nextHud=Time.realtimeSinceStartup+.2f;}
+            string candidate=GameAdapter.Candidate();if(Time.realtimeSinceStartup>=nextHud||candidate!=lastCandidate){if(ChatShown&&!Dragging&&!pressed)ApplyDockPosition();lastCandidate=candidate;nextHud=Time.realtimeSinceStartup+.2f;}
             if(!runtime.IsRoleTest&&Time.realtimeSinceStartup>=nextDeskCheck){UpdateDeskAccess();nextDeskCheck=Time.realtimeSinceStartup+.5f;}
             if(popupRefresh!=null&&!pressed&&!Dragging&&Time.realtimeSinceStartup>=nextPopupRefresh){popupRefresh();nextPopupRefresh=Time.realtimeSinceStartup+1;}
             if(pendingReplyRequest!=null&&!runtime.IsPending(pendingReplyRequest)){pendingReplyRequest=null;if(dispatchInput!=null)dispatchInput.interactable=true;if(dispatchSend!=null)dispatchSend.interactable=true;}
@@ -242,13 +278,14 @@ namespace EnusDE.Communications
         }
         internal bool HandleEscape()
         {
+            if(UI.UIStateArbiter.PhotoModeActive)return false;
             if(WheelOpen){CancelWheel();return true;}if(popup!=null){ClosePopup();return true;}
             if(OwnTextFocused()||historyFocus){input.DeactivateInputField();if(dispatchInput!=null)dispatchInput.DeactivateInputField();if(EventSystem.current!=null)EventSystem.current.SetSelectedGameObject(null);historyFocus=false;SetCompose(false);dirty=true;return true;}
             if(dispatch!=null){CloseDispatch();return true;}return false;
         }
         bool BlockWheelContext()
         {
-            if(popup!=null||entry.SettingsOpen||OtherTextFocused()||PauseMenu.IsPaused||!Application.isFocused)return true;
+            if(UI.UIStateArbiter.PhotoModeActive||popup!=null||entry.SettingsOpen||OtherTextFocused()||PauseMenu.IsPaused||!Application.isFocused)return true;
             if(UI.ContextMenu.ContextMenu.IsShown)return true;
             return Resources.FindObjectsOfTypeAll<UI.PreferencesWindow.PreferencesWindow>().Any(p=>p.gameObject.activeInHierarchy&&p.GetComponentInParent<Window>()?.IsShown==true);
         }

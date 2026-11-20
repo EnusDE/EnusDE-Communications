@@ -92,8 +92,15 @@ namespace EnusDE.Communications
 {
     public sealed class TestText {public string Get(string key)=>key;}
     public sealed class TestLog {public void Warning(string text){throw new Exception(text);}}
-    public sealed class TestUi {public void ShowArchive(){}public void Toast(string text){}}
-    public sealed class TestRuntime {public TestUi UI=new TestUi();}
+    public sealed class TestUi
+    {
+        readonly ModSettings settings;
+        public TestUi(ModSettings settings){this.settings=settings;}
+        public void ShowArchive(){}
+        public void Toast(string text){}
+        public void RememberChatPosition(){settings.ChatX=220;settings.ChatY=80;}
+    }
+    public sealed class TestRuntime {public TestUi UI;}
     public sealed class Entry
     {
         public ModSettings Settings=new ModSettings();public TestText Text=new TestText();public TestLog Log=new TestLog();public TestRuntime Runtime=new TestRuntime();
@@ -103,7 +110,7 @@ namespace EnusDE.Communications
         public string[] VoiceMicrophones=>new[]{"Test microphone"};
         public string VoiceStatus=>"voice_off";
         public Person[] VoicePeople=>Array.Empty<Person>();
-        public Entry(){Bindings=new CommsBindings(Settings);}
+        public Entry(){Bindings=new CommsBindings(Settings);Runtime.UI=new TestUi(Settings);}
         public Action OpenSettingsCallback;public void OpenSettings(){OpenSettingsCallback?.Invoke();}
         public void Save(bool refresh=true){Settings.Normalize();}
         public void SetChatBinding(string path){Settings.ChatBinding=path;OpenChat.bindings[0].effectivePath=path;Save();}

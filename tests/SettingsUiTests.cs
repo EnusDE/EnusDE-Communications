@@ -20,7 +20,7 @@ static class SettingsUiTests
         try
         {
             var entry=new Entry();var local=Draw(entry,false);
-            Check(local.Sliders.Count==11&&local.Rebinds.Count==3&&local.Toggles.Count==5,"Settings rendering stopped early");Check(!local.Buttons.ContainsKey("archive"),"Host archive visible to client");
+            Check(local.Sliders.Count==11&&local.Rebinds.Count==3&&local.Toggles.Count==7,"Settings rendering stopped early");Check(!local.Buttons.ContainsKey("archive"),"Host archive visible to client");
             Console.WriteLine("PASS native settings content completes with all sliders and three binding fields");
             local.Buttons["performance_start"]();Check(entry.PerformanceRecording,"Capture cannot be started by a guest");
             var diagnostic=Draw(entry,false);diagnostic.Buttons["performance_pause"]();Check(entry.DiagnosticPauses==1,"Diagnostic pause unavailable");
@@ -33,13 +33,24 @@ static class SettingsUiTests
             Console.WriteLine("PASS unbound chat action can be assigned and cleared through settings callbacks");
             local.Sliders["opacity"].Change(100);local.Sliders["red"].Change(1);local.Sliders["green"].Change(0);local.Sliders["blue"].Change(.25f);Check(entry.Settings.BackgroundOpacity==1&&entry.Settings.BackgroundR==1&&entry.Settings.BackgroundG==0&&entry.Settings.BackgroundB==.25f,"Color callbacks");local.Sliders["opacity"].Change(0);Check(entry.Settings.BackgroundOpacity==0,"Transparent background");
             Console.WriteLine("PASS background color and opacity from transparent to opaque");
-            var host=Draw(entry,true);Check(host.Buttons.ContainsKey("archive")&&host.Toggles.Count==16&&host.Interactable.Values.All(v=>v),"Missing or disabled host controls");host.Toggles["admin_rank: President"](true);Check(entry.Settings.Host.AdminRanks.Contains("President"),"Host rank switch is not usable");host.Toggles["admin_rank: President"](false);GameAdapter.IsHost=false;host.Toggles["admin_rank: President"](true);Check(entry.Settings.Host.AdminRanks.Length==0,"Stale host settings granted permission");
+            var host=Draw(entry,true);Check(host.Buttons.ContainsKey("archive")&&host.Toggles.Count==18&&host.Interactable.Values.All(v=>v),"Missing or disabled host controls");host.Toggles["admin_rank: President"](true);Check(entry.Settings.Host.AdminRanks.Contains("President"),"Host rank switch is not usable");host.Toggles["admin_rank: President"](false);GameAdapter.IsHost=false;host.Toggles["admin_rank: President"](true);Check(entry.Settings.Host.AdminRanks.Length==0,"Stale host settings granted permission");
             Console.WriteLine("PASS host-only archive control and rank mutation guard");
             Check(entry.Wheel.actionMap.asset==entry.Bindings.Asset&&entry.OpenChat.actionMap.asset==entry.Bindings.Asset,"Action asset missing");bool rejected=false;try{UnityEngine.InputSystem.InputActionReference.Create(new UnityEngine.InputSystem.InputActionMap("orphan").AddAction("test",UnityEngine.InputSystem.InputActionType.Button));}catch(InvalidOperationException){rejected=true;}Check(rejected,"Native asset requirement not enforced");
             Console.WriteLine("PASS binding factory registers input actions in an asset accepted by the native rebind control");
             local.Toggles["show_chat_sp"](false);Check(!entry.Settings.ChatVisible,"Singleplayer toggle not saved");local.Toggles["show_chat_sp"](true);Check(entry.Settings.ChatVisible,"Singleplayer toggle not restored");
             local.Toggles["desk_shortcut"](false);Check(!entry.Settings.ShowDeskShortcut,"Desk access cannot be hidden");local.Toggles["desk_shortcut"](true);Check(entry.Settings.ShowDeskShortcut,"Desk access cannot be restored");
             Console.WriteLine("PASS singleplayer visibility can be disabled and enabled through settings");
+            Check(entry.Settings.AutoDock&&!entry.Settings.ChatDockRight&&!entry.Settings.ChatUnlocked,"Default is not docked left and locked");
+            local.Toggles["chat_dock_right"](true);
+            local.Toggles["chat_unlock"](true);
+            Check(!entry.Settings.AutoDock&&entry.Settings.ChatUnlocked&&entry.Settings.ChatX==220&&entry.Settings.ChatY==80,"Unlock did not retain the visible position");
+            local.Toggles["chat_unlock"](false);
+            Check(!entry.Settings.AutoDock&&!entry.Settings.ChatUnlocked&&entry.Settings.ChatX==220,"Lock restored docking or lost the free position");
+            local.Toggles["auto_dock"](true);
+            Check(entry.Settings.AutoDock&&entry.Settings.ChatDockRight&&!entry.Settings.ChatUnlocked,"Docking lost the selected side");
+            local.Buttons["reset_positions"]();
+            Check(entry.Settings.AutoDock&&!entry.Settings.ChatDockRight&&!entry.Settings.ChatUnlocked,"Reset did not restore left docking");
+            Console.WriteLine("PASS independent chat docking, unlocking, locking and reset");
             var physical=new UnityEngine.InputSystem.Controls.ButtonControl();UnityEngine.InputSystem.InputSystem.Controls[entry.Settings.WheelBinding]=physical;entry.Bindings.Sample(1,true);
             entry.Bindings.Map.Disable();GameAdapter.IsHost=false;physical.isPressed=true;entry.Bindings.Sample(2,true);Check(entry.Bindings.Pressed(entry.Wheel),"Guest cannot read a held key when the action-map press event is missing");entry.Bindings.EnsureEnabled();Check(entry.Bindings.Map.enabled,"Wheel map did not recover from a lifecycle reset");
             physical.isPressed=false;entry.Bindings.Sample(3,true);Check(entry.Bindings.Released(entry.Wheel),"Physical wheel release was lost");
@@ -77,7 +88,7 @@ static class SettingsUiTests
             var voiceHost=Draw(entry,true);voiceHost.Toggles["voice_host_allow"](true);voiceHost.Sliders["voice_range"].Change(60);Check(entry.Settings.Host.VoiceAllowed&&entry.Settings.VoiceRange==60,"Host voice settings not applied");
             GameAdapter.IsHost=false;voiceHost.Toggles["voice_host_allow"](false);voiceHost.Sliders["voice_range"].Change(10);Check(entry.Settings.Host.VoiceAllowed&&entry.Settings.VoiceRange==60,"Stale guest callback changed host voice policy");
             Console.WriteLine("PASS host voice permission and hearing distance reject stale guest callbacks");
-            Console.WriteLine("RESULT 16 settings UI regression tests passed");
+            Console.WriteLine("RESULT 17 settings UI regression tests passed");
         }
         catch(Exception error){Console.Error.WriteLine("FAIL "+error);Environment.ExitCode=1;}
     }

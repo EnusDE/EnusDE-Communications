@@ -46,7 +46,27 @@ namespace EnusDE.Communications
             b.AddField(T("chat_width"),b.AddSliderQuantized(()=>entry.Settings.ChatWidth,()=>entry.Settings.ChatWidth.ToString("0"),value=>{entry.Settings.ChatWidth=value;entry.Save();},increment:20,minValue:440,maxValue:800,editingEndedAction:null));
             b.AddField(T("chat_height"),b.AddSliderQuantized(()=>entry.Settings.ChatHeight,()=>entry.Settings.ChatHeight.ToString("0"),value=>{entry.Settings.ChatHeight=value;entry.Save();},increment:10,minValue:120,maxValue:600,editingEndedAction:null));
             b.FieldLabelWidth=28;
-            b.AddFieldToggle(T("auto_dock"),()=>entry.Settings.AutoDock,value=>{entry.Settings.AutoDock=value;entry.Save();},interactable:true);
+            b.AddFieldToggle(T("auto_dock"),()=>entry.Settings.AutoDock,value=>{
+                if(!value&&entry.Settings.AutoDock)entry.Runtime?.UI?.RememberChatPosition();
+                entry.Settings.AutoDock=value;
+                entry.Settings.ChatUnlocked=false;
+                entry.Save();
+                b.SetNeedsRebuild();
+            },interactable:true);
+            b.AddFieldToggle(T("chat_dock_right"),()=>entry.Settings.ChatDockRight,value=>{
+                entry.Settings.ChatDockRight=value;
+                entry.Settings.AutoDock=true;
+                entry.Settings.ChatUnlocked=false;
+                entry.Save();
+                b.SetNeedsRebuild();
+            },interactable:true);
+            b.AddFieldToggle(T("chat_unlock"),()=>entry.Settings.ChatUnlocked,value=>{
+                if(value&&entry.Settings.AutoDock)entry.Runtime?.UI?.RememberChatPosition();
+                if(value)entry.Settings.AutoDock=false;
+                entry.Settings.ChatUnlocked=value;
+                entry.Save();
+                b.SetNeedsRebuild();
+            },interactable:true);
             b.AddFieldToggle(T("timestamps"),()=>entry.Settings.ShowTimestamps,value=>{entry.Settings.ShowTimestamps=value;entry.Save();},interactable:true);
             b.AddFieldToggle(T("desk_shortcut"),()=>entry.Settings.ShowDeskShortcut,value=>{entry.Settings.ShowDeskShortcut=value;entry.Save(false);},interactable:true);
             b.Spacer(6);b.AddLabel(T("background"));
@@ -55,7 +75,7 @@ namespace EnusDE.Communications
             b.AddField(T("red"),b.AddSlider(()=>entry.Settings.BackgroundR,()=>((int)(entry.Settings.BackgroundR*255)).ToString(),value=>{entry.Settings.BackgroundR=value;entry.Save();},0,1,false,null));
             b.AddField(T("green"),b.AddSlider(()=>entry.Settings.BackgroundG,()=>((int)(entry.Settings.BackgroundG*255)).ToString(),value=>{entry.Settings.BackgroundG=value;entry.Save();},0,1,false,null));
             b.AddField(T("blue"),b.AddSlider(()=>entry.Settings.BackgroundB,()=>((int)(entry.Settings.BackgroundB*255)).ToString(),value=>{entry.Settings.BackgroundB=value;entry.Save();},0,1,false,null));
-            b.AddButton(T("reset_positions"),()=>{entry.Settings.ChatX=16;entry.Settings.ChatY=174;entry.Settings.AutoDock=true;entry.Settings.DispatchX=1080;entry.Settings.DispatchY=140;entry.Settings.ArchiveX=650;entry.Settings.ArchiveY=160;entry.Save();});
+            b.AddButton(T("reset_positions"),()=>{entry.Settings.ChatX=16;entry.Settings.ChatY=174;entry.Settings.AutoDock=true;entry.Settings.ChatDockRight=false;entry.Settings.ChatUnlocked=false;entry.Settings.DispatchX=1080;entry.Settings.DispatchY=140;entry.Settings.ArchiveX=650;entry.Settings.ArchiveY=160;entry.Save();b.SetNeedsRebuild();});
             b.Spacer(8);b.AddLabel(T("settings_controls"));b.AddLabel(T("bind_prompt"));b.AddLabel(T("wheel_binding"));b.AddInputBindingControl(entry.Wheel,entry.BindingConflict,()=>{entry.Settings.WheelBinding=entry.Wheel.bindings[0].effectivePath;entry.Save();b.SetNeedsRebuild();});
             b.AddLabel(T("chat_binding"));b.AddInputBindingControl(entry.OpenChat,entry.BindingConflict,()=>{entry.Settings.ChatBinding=entry.OpenChat.bindings[0].effectivePath??"";entry.Save();b.SetNeedsRebuild();});
             b.AddButton(T("clear_chat_binding"),()=>{entry.SetChatBinding("");b.SetNeedsRebuild();});

@@ -26,6 +26,7 @@ static class MetadataTests
             test("actual 0.6.3 game build and private integration members",()=>{
                 check(md.GetGuid(md.GetModuleDefinition().Mvid)==new Guid("aac29a8a-ef90-41c1-b17a-0d75169dc6b8"),"Unexpected game build");
                 member("UI.GameInput","_focusPause",true);member("UI.GameInput","Update",false);member("UI.Common.EscapeHandler","HandleEscape",false);
+                member("UI.UIStateArbiter","get_PhotoModeActive",false);
                 member("Game.HostManager","_clients",true);member("Game.HostManager","AccessLevelForPlayerId",false);member("Game.HostManager+Client","Status",true);member("Game.HostManager+Client","get_PlayerId",false);
                 member("Network.Client.ClientManager","_client",true);member("Network.Client.GameClient","get_ConnectionInfo",false);
                 member("Network.Steam.SteamClient","Update",false);

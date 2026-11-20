@@ -11,6 +11,7 @@ namespace EnusDE.Communications
         public float DispatchX=1080,DispatchY=140,ArchiveX=650,ArchiveY=160;
         public float BackgroundOpacity=0,BackgroundR=.1f,BackgroundG=.11f,BackgroundB=.085f;
         public bool ChatVisible=true,AutoDock=true,ShowTimestamps=true,ShowDeskShortcut=true;
+        public bool ChatDockRight,ChatUnlocked;
         public string WheelBinding="<Keyboard>/f10";
         public string ChatBinding="";
         // Personal opt-in; absence in older settings means disabled.
@@ -23,6 +24,7 @@ namespace EnusDE.Communications
         {
             FadeSeconds=NormalizeFade(FadeSeconds);FontSize=Bound(FontSize,15,12,24);WhistleVolume=Bound(WhistleVolume,.6f,0,1);
             ChatX=Bound(ChatX,16,0,10000);ChatY=Bound(ChatY,174,0,10000);ChatWidth=Bound(ChatWidth,440,440,800);ChatHeight=Bound(ChatHeight,215,120,600);
+            if(AutoDock)ChatUnlocked=false;
             DispatchX=Bound(DispatchX,1080,0,10000);DispatchY=Bound(DispatchY,140,0,10000);ArchiveX=Bound(ArchiveX,650,0,10000);ArchiveY=Bound(ArchiveY,160,0,10000);
             BackgroundOpacity=Bound(BackgroundOpacity,0,0,1);BackgroundR=Bound(BackgroundR,.1f,0,1);BackgroundG=Bound(BackgroundG,.11f,0,1);BackgroundB=Bound(BackgroundB,.085f,0,1);
             if(String.IsNullOrWhiteSpace(WheelBinding)||WheelBinding.Length>160)WheelBinding="<Keyboard>/f10";

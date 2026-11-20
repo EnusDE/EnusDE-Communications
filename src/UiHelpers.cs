@@ -11,8 +11,8 @@ namespace EnusDE.Communications
     {
         internal RectTransform Target;internal CommsUI Owner;internal Action Done;
         public void OnBeginDrag(PointerEventData e){Owner.Dragging=true;}
-        public void OnDrag(PointerEventData e){Target.anchoredPosition+=e.delta/Owner.Scale;Owner.Clamp(Target);}
-        public void OnEndDrag(PointerEventData e){Owner.Dragging=false;Done?.Invoke();}
+        public void OnDrag(PointerEventData e){if(!Owner.Dragging)return;Target.anchoredPosition+=e.delta/Owner.Scale;Owner.Clamp(Target);}
+        public void OnEndDrag(PointerEventData e){if(!Owner.Dragging)return;Owner.Dragging=false;Done?.Invoke();}
     }
     internal sealed class UiFactory
     {
