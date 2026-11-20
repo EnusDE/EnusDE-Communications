@@ -1,15 +1,20 @@
 // Copyright (c) 2026 EnusDE. MIT License.
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UI.Builder;
 using System.Reflection;
 using UI.PreferencesWindow;
 using UI.Windows;
+using UnityEngine;
 namespace EnusDE.Communications
 {
     internal sealed class NativeSettings:IDisposable
     {
         readonly Entry entry;bool registered;
+        const string VoiceWindowId="enusde.communications.voice";
+        static NativeSettings voiceWindowOwner;
+        CustomWindowHandle voiceWindow;
         readonly UIState<bool> expanded=new UIState<bool>(false);
         string T(string key)=>entry.Text.Get(key);
         internal NativeSettings(Entry owner){entry=owner;}
@@ -21,7 +26,54 @@ namespace EnusDE.Communications
         }
         internal bool IsOpen=>GameMenus.IsOpen;
         internal void Close(){WindowManager.Shared?.GetWindow<PreferencesWindow>()?.GetComponent<Window>()?.CloseWindow();}
-        public void Dispose(){if(!registered)return;SharedModsTab.Remove();registered=false;}
+        public void Dispose()
+        {
+            CloseVoice();
+            if(voiceWindowOwner==this)voiceWindowOwner=null;
+            if(!registered)return;
+            SharedModsTab.Remove();registered=false;
+        }
+
+        internal void CloseVoice()
+        {
+            if(voiceWindow!=null&&WindowManager.Shared!=null&&voiceWindow.IsOpen())voiceWindow.Close();
+        }
+
+        internal void ToggleVoice()=>ShowVoice(toggle:true);
+
+        void ShowVoice(bool toggle=false)
+        {
+            try
+            {
+                var manager=WindowManager.Shared;
+                if(manager==null){entry.Runtime?.UI?.Toast(T("settings_unavailable"));return;}
+                voiceWindowOwner=this;
+                if(!CustomWindowHandle.Exists(VoiceWindowId))
+                {
+                    manager.RegisterCustomWindow(new CustomWindowDefinition
+                    {
+                        Identifier=VoiceWindowId,
+                        Title=T("voice_window_title"),
+                        Config=WindowConfig.Fixed(new Vector2Int(460,450),Window.Position.LowerLeft),
+                        BuilderAction=BuildVoiceWindow
+                    });
+                }
+                voiceWindow=voiceWindow??CustomWindowHandle.Create(VoiceWindowId);
+                if(toggle&&voiceWindow.IsOpen()){voiceWindow.Close();return;}
+                voiceWindow.Show();
+                voiceWindow.SetTitle(T("voice_window_title"));
+            }
+            catch(Exception error)
+            {
+                entry.Log.Warning("Could not open voice settings: "+error.Message);
+                entry.Runtime?.UI?.Toast(T("settings_unavailable"));
+            }
+        }
+
+        static void BuildVoiceWindow(UIPanelBuilder builder)
+        {
+            if(voiceWindowOwner!=null)builder.VScrollView(voiceWindowOwner.VoiceContent);
+        }
         internal void Show()
         {
             try
@@ -63,10 +115,13 @@ namespace EnusDE.Communications
             b.AddLabel(T("wheel_hint"));b.AddField(T("whistle_volume"),b.AddSlider(()=>entry.Settings.WhistleVolume,()=>((int)(entry.Settings.WhistleVolume*100))+"%",value=>{entry.Settings.WhistleVolume=value;entry.Save();},0,1,false,null));
             b.AddLabel(T("language_hint"));
             b.AddLabel(T("settings_location")+": ModSettings/enusde-communications.json");
+            b.Spacer(8);
+            b.AddButton(T("voice_open_settings"),()=>{Close();ShowVoice();});
             b.Spacer(8);b.AddLabel(T("performance_title"));b.AddLabel(T("performance_hint"));
             b.AddButton(T(entry.PerformanceRecording?"performance_stop":"performance_start"),()=>{entry.TogglePerformanceCapture();b.SetNeedsRebuild();});
             if(entry.CanDiagnosticPause)b.AddButton(T("performance_pause"),()=>entry.PauseForDiagnosis());
             if(!GameAdapter.IsHost)return;
+
             b.Spacer(8);b.AddLabel(T("test_title"));b.AddLabel(T("test_hint"));
             if(!entry.RoleTestActive)b.AddButton(T("test_open"),entry.StartRoleTest);
             else
@@ -85,6 +140,51 @@ namespace EnusDE.Communications
                 b.AddFieldToggle(T("dispatcher_rank")+": "+rank,()=>entry.Settings.Host.DispatcherRanks.Contains(selected),value=>{if(!GameAdapter.IsHost)return;entry.Settings.Host.DispatcherRanks=Set(entry.Settings.Host.DispatcherRanks,selected,value);entry.Save();},interactable:true);
             }
             b.AddLabel(T("archive_hint"));b.AddButton(T("archive"),()=>{Close();entry.Runtime?.UI?.ShowArchive();});
+        }
+
+        void VoiceContent(UIPanelBuilder b)
+        {
+            b.AddLabel(T("voice_hint"));
+            b.AddLabel(()=>entry.VoiceStatus,UIPanelBuilder.Frequency.Periodic);
+            b.FieldLabelWidth=28;
+            b.AddFieldToggle(T("voice_enable"),()=>entry.Settings.VoiceEnabled,value=>{entry.Settings.VoiceEnabled=value;entry.Save(false);},interactable:true);
+            b.AddLabel(T("voice_mode"));
+            b.AddDropdown(new List<string>{T("voice_push_to_talk"),T("voice_open_mic")},entry.Settings.VoiceOpenMic?1:0,index=>{
+                if(index!=0&&index!=1)return;
+                entry.Settings.VoiceOpenMic=index==1;
+                entry.Save(false);
+                b.SetNeedsRebuild();
+            });
+            if(entry.Settings.VoiceOpenMic)b.AddLabel(T("voice_open_mic_hint"));
+            else
+            {
+                b.AddLabel(T("voice_binding"));
+                b.AddInputBindingControl(entry.VoiceTalk,entry.VoiceBindingConflict,()=>{
+                    entry.Settings.VoiceBinding=entry.VoiceTalk.bindings[0].effectivePath??"";
+                    entry.Save(false);
+                    b.SetNeedsRebuild();
+                });
+            }
+            b.AddLabel(T("voice_microphone")+": "+(String.IsNullOrEmpty(entry.Settings.VoiceMicrophone)?T("voice_default_device"):entry.Settings.VoiceMicrophone));
+            b.AddButton(T("voice_next_microphone"),()=>{
+                string[] devices=new[]{""}.Concat(entry.VoiceMicrophones).Distinct().ToArray();
+                int index=Array.IndexOf(devices,entry.Settings.VoiceMicrophone);
+                entry.Settings.VoiceMicrophone=devices[(index+1)%devices.Length];entry.Save(false);b.SetNeedsRebuild();
+            });
+            b.FieldLabelWidth=170;
+            b.AddField(T("voice_volume"),b.AddSlider(()=>entry.Settings.VoiceVolume,()=>((int)(entry.Settings.VoiceVolume*100))+"%",value=>{entry.Settings.VoiceVolume=value;entry.Save(false);},0,1,false,null));
+            b.AddField(T("voice_gain"),b.AddSlider(()=>entry.Settings.VoiceGain,()=>((int)(entry.Settings.VoiceGain*100))+"%",value=>{entry.Settings.VoiceGain=value;entry.Save(false);},0,2,false,null));
+            b.FieldLabelWidth=28;
+            foreach(var person in entry.VoicePeople)
+            {
+                string id=person.Id;
+                b.AddFieldToggle(T("voice_mute")+": "+person.Name+" ("+id+")",()=>entry.Settings.VoiceMuted.Contains(id),value=>{entry.Settings.VoiceMuted=Set(entry.Settings.VoiceMuted,id,value);entry.Save(false);},interactable:true);
+            }
+            if(!GameAdapter.IsHost)return;
+            b.Spacer(8);b.AddLabel(T("voice_host_title"));b.FieldLabelWidth=28;
+            b.AddFieldToggle(T("voice_host_allow"),()=>entry.Settings.Host.VoiceAllowed,value=>{if(!GameAdapter.IsHost)return;entry.Settings.Host.VoiceAllowed=value;entry.Save(false);},interactable:true);
+            b.FieldLabelWidth=170;
+            b.AddField(T("voice_range"),b.AddSliderQuantized(()=>entry.Settings.VoiceRange,()=>entry.Settings.VoiceRange.ToString("0")+" m",value=>{if(!GameAdapter.IsHost)return;entry.Settings.VoiceRange=value;entry.Save(false);},increment:5,minValue:5,maxValue:100,editingEndedAction:null));
         }
         static string[] Set(string[] values,string item,bool add){return add?values.Concat(new[]{item}).Distinct().ToArray():values.Where(value=>value!=item).ToArray();}
     }

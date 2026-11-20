@@ -46,6 +46,8 @@ namespace EnusDE.Communications
     }
     public sealed class HostPolicy
     {
+        // Session permission, independent of the host player's personal opt-in.
+        public bool VoiceAllowed=false;
         public string[] AdminRanks = new string[0];
         public string[] DispatcherRanks = { "Dispatcher" };
         public bool IsAdmin(Person p) { return p != null && (p.Host || (AdminRanks ?? new string[0]).Contains(p.Rank, StringComparer.Ordinal)); }

@@ -24,7 +24,7 @@ namespace EnusDE.Communications
         internal bool PerformanceRecording=>Performance.Recording;
         internal bool CanDiagnosticPause=>!RoleTestActive&&Runtime!=null&&GameAdapter.MultiplayerActive;
         GameObject maintenance;
-        internal InputAction Wheel,OpenChat;InputActionMap map;CommsBindings bindings;Harmony harmony;GameObject root;internal CommsRuntime Runtime;NativeSettings nativeSettings;string settingsPath;
+        internal InputAction Wheel,OpenChat,VoiceTalk;InputActionMap map;CommsBindings bindings;Harmony harmony;GameObject root;internal CommsRuntime Runtime;NativeSettings nativeSettings;string settingsPath;
         internal bool BindingConflict=>!String.IsNullOrEmpty(Settings.ChatBinding)&&String.Equals(Settings.ChatBinding,Settings.WheelBinding,StringComparison.OrdinalIgnoreCase);
         internal bool SettingsOpen=>nativeSettings?.IsOpen==true;
         internal bool WheelPressed=>bindings?.Pressed(Wheel)==true;
@@ -32,16 +32,21 @@ namespace EnusDE.Communications
         internal bool WheelHeld=>bindings?.Held(Wheel)==true;
         internal bool WheelInputReady=>bindings?.Ready(Wheel)==true;
         internal bool WheelFunctionKey=>bindings?.WheelFunctionKey==true;
+        internal bool VoiceHeld=>bindings?.Held(VoiceTalk)==true;
+        internal string[] VoiceMicrophones=>Microphone.devices;
+        internal string VoiceStatus=>Runtime?.Voice?.Status??Text.Get("voice_unavailable");
+        internal Person[] VoicePeople=>Runtime?.View.People.Values.Where(p=>p.Id!=GameAdapter.LocalId).ToArray()??Array.Empty<Person>();
+        internal bool VoiceBindingConflict=>!String.IsNullOrEmpty(Settings.VoiceBinding)&&(String.Equals(Settings.VoiceBinding,Settings.WheelBinding,StringComparison.OrdinalIgnoreCase)||String.Equals(Settings.VoiceBinding,Settings.ChatBinding,StringComparison.OrdinalIgnoreCase));
         internal bool ChatPressed=>bindings?.Pressed(OpenChat)==true;
         internal void KeepBindingsEnabled(CommsRuntime source)
         {if(ActiveRuntime!=source)return;if(!SettingsOpen)bindings?.EnsureEnabled();bindings?.Sample(Time.frameCount,Application.isFocused&&!SettingsOpen);}
         public void OnModLoad(IModContext context)
         {
-            if(typeof(Game.State.StateManager).Module.ModuleVersionId!=new Guid("5a60632d-406b-4972-b216-2484a9007d35"))throw new NotSupportedException("EnusDE Communications 0.6.7 requires the Railroader 0.6.2 build it was compiled against.");
+            if(typeof(Game.State.StateManager).Module.ModuleVersionId!=new Guid("5a60632d-406b-4972-b216-2484a9007d35"))throw new NotSupportedException("EnusDE Communications 0.6.8 requires the Railroader 0.6.2 build it was compiled against.");
             active=this;Log=context.Log;DataDirectory=Path.Combine(context.ModDirectory,"Data");Directory.CreateDirectory(DataDirectory);settingsPath=ModSettings.ForHome(Game.UserPaths.RailroaderDirectory);
             try{Settings=ModSettings.LoadUser(Game.UserPaths.RailroaderDirectory,context.ModDirectory);}catch(Exception error){Settings=new ModSettings();Log.Warning("Using default communication settings: "+error.Message);}
             harmony=new Harmony(PatchId);Text=new Localization(context.ModDirectory,harmony,message=>Log.Warning(message));
-            bindings=new CommsBindings(Settings);map=bindings.Map;Wheel=bindings.Wheel;OpenChat=bindings.OpenChat;
+            bindings=new CommsBindings(Settings);map=bindings.Map;Wheel=bindings.Wheel;OpenChat=bindings.OpenChat;VoiceTalk=bindings.VoiceTalk;
             harmony.Patch(AccessTools.Method(typeof(UI.GameInput),"Update"),prefix:new HarmonyMethod(typeof(Entry),nameof(BeforeInput)),finalizer:new HarmonyMethod(typeof(Entry),nameof(AfterInput)));
             // Observe both native roles without changing packets, input or return values.
             foreach(string name in new[]{"Network.Steam.SteamClient","Network.Steam.SteamServer"})
@@ -53,19 +58,19 @@ namespace EnusDE.Communications
             harmony.Patch(AccessTools.Method(typeof(Game.State.StateManager),"HandleCharacterMessage",new[]{typeof(Game.Messages.ICharacterMessage),typeof(Game.IPlayer)}),postfix:new HarmonyMethod(typeof(Entry),nameof(AfterNativeConsole)));
             nativeSettings=new NativeSettings(this);nativeSettings.Register();
             Archive=new HostArchive(Path.Combine(DataDirectory,"HostArchive"));maintenance=new GameObject("EnusDE.Communications.ArchiveMaintenance");UnityEngine.Object.DontDestroyOnLoad(maintenance);maintenance.AddComponent<ArchiveMaintenance>().Initialize(this);
-            Log.Info("EnusDE Communications 0.6.7 loaded. Settings: Preferences > Mods > EnusDE Communications. No separate menu dependency. User settings: "+settingsPath+". Optional multiplayer participation. Steam channel 189731.");
+            Log.Info("EnusDE Communications 0.6.8 loaded. Settings: Preferences > Mods > EnusDE Communications. No separate menu dependency. User settings: "+settingsPath+". Optional multiplayer participation. Steam channel 189731.");
         }
         public void OnWorldLoad()
         {
-            OnWorldUnload();map.Enable();root=new GameObject("EnusDE.Communications.Runtime");UnityEngine.Object.DontDestroyOnLoad(root);
+            OnWorldUnload();Settings.VoiceEnabled=false;Settings.Host.VoiceAllowed=false;map.Enable();root=new GameObject("EnusDE.Communications.Runtime");UnityEngine.Object.DontDestroyOnLoad(root);
             Runtime=root.AddComponent<CommsRuntime>();try{Runtime.Begin(this);}catch(Exception error){Log.Error("Communications could not start: "+error);OnWorldUnload();}
         }
         public void OnWorldUnload()
-        {StopRoleTest();if(Performance.Recording)ExportPerformance();map?.Disable();if(root!=null)UnityEngine.Object.Destroy(root);root=null;Runtime=null;NativeDock.Clear();GameAdapter.Clear();GameMenus.Clear();}
+        {StopRoleTest();nativeSettings?.CloseVoice();Runtime?.Voice?.Dispose();if(Performance.Recording)ExportPerformance();map?.Disable();if(root!=null)UnityEngine.Object.Destroy(root);root=null;Runtime=null;NativeDock.Clear();GameAdapter.Clear();GameMenus.Clear();}
         public void OnModUnload()
         {OnWorldUnload();if(maintenance!=null)UnityEngine.Object.Destroy(maintenance);maintenance=null;nativeSettings?.Dispose();nativeSettings=null;harmony?.UnpatchAll(PatchId);harmony=null;bindings?.Dispose();bindings=null;map=null;if(active==this)active=null;}
         internal void Save(bool refresh=true)
-        {try{Settings.Write(settingsPath);if(refresh){Runtime?.UI?.ApplySettings();TestRuntime?.UI?.ApplySettings();}}catch(Exception error){Log.Warning("Communication settings could not be saved: "+error.Message);ActiveRuntime?.UI?.Toast(Text.Get("save_failed"));}}
+        {try{Settings.Write(settingsPath);Runtime?.Voice?.SettingsChanged();if(refresh){Runtime?.UI?.ApplySettings();TestRuntime?.UI?.ApplySettings();}}catch(Exception error){Log.Warning("Communication settings could not be saved: "+error.Message);ActiveRuntime?.UI?.Toast(Text.Get("save_failed"));}}
         internal void SetChatBinding(string path)
         {bool enabled=map.enabled;map.Disable();OpenChat.ApplyBindingOverride(0,path);Settings.ChatBinding=path;if(enabled)map.Enable();Save();}
         static void BeforeInput(UI.GameInput __instance,out bool __state)
@@ -84,20 +89,22 @@ namespace EnusDE.Communications
         }
         internal void OpenSettings()
         {ActiveRuntime?.UI?.CancelWheel();nativeSettings?.Show();}
+        internal void ToggleVoiceSettings()
+        {if(Runtime!=null&&!RoleTestActive)nativeSettings?.ToggleVoice();}
         internal void TogglePerformanceCapture()
         {if(Performance.Recording){ExportPerformance();return;}if(RoleTestActive){TestRuntime.UI.Toast(Text.Get("test_stop_before_measure"));return;}if(Runtime==null)return;Performance.Start();Log.Info("60-second chat performance capture started; buffered in memory.");Runtime.UI.Toast(Text.Get("performance_started"));}
         internal void StartRoleTest()
         {
             if(!GameAdapter.IsHost||Runtime==null||RoleTestActive)return;
             if(Runtime.DiagnosticSuspended){Runtime.UI.Toast(Text.Get("test_wait_pause"));return;}
-            if(Performance.Recording)ExportPerformance();Runtime.UI.SuspendForRoleTest();
+            if(Performance.Recording)ExportPerformance();nativeSettings?.CloseVoice();Runtime.UI.SuspendForRoleTest();Runtime.Voice?.Dispose();
             testRoot=new GameObject("EnusDE.Communications.LocalRoleTest");UnityEngine.Object.DontDestroyOnLoad(testRoot);TestRuntime=testRoot.AddComponent<CommsRuntime>();
             try{TestRuntime.BeginRoleTest(this,Runtime.View,Runtime.Client.State?.Train??GameAdapter.Candidate());nativeSettings.Close();}catch(Exception error){Log.Warning("Local role test could not start: "+error.Message);StopRoleTest();}
         }
         internal void SwitchTestRole(TestChatRole role){if(!GameAdapter.IsHost)return;TestRuntime?.SelectTestRole(role);}
         internal void StopRoleTest(){TestRuntime?.UI?.PrepareDiagnosticPause();if(testRoot!=null)UnityEngine.Object.Destroy(testRoot);testRoot=null;TestRuntime=null;Runtime?.UI?.Dirty();}
         internal void PauseForDiagnosis()
-        {if(!CanDiagnosticPause)return;if(!Performance.Recording)TogglePerformanceCapture();Runtime.PauseForDiagnosis();nativeSettings.Close();}
+        {if(!CanDiagnosticPause)return;if(!Performance.Recording)TogglePerformanceCapture();nativeSettings.CloseVoice();Runtime.PauseForDiagnosis();nativeSettings.Close();}
         internal void ExportPerformance()
         {
             Performance.Stop();if(Performance.Count==0)return;

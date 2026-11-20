@@ -1,5 +1,6 @@
 // Test-only boundary: actual NativeSettings and SharedModsTab are compiled into these tests.
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using UI.Builder;
 namespace HarmonyLib
@@ -42,15 +43,54 @@ namespace UI.PreferencesWindow
 }
 namespace UI.Windows
 {
-    public sealed class Window {public bool IsShown;public void CloseWindow(){IsShown=false;}}
+    public sealed class Window
+    {
+        public enum Position { LowerLeft }
+        public bool IsShown;
+        public void CloseWindow(){IsShown=false;}
+    }
+    public sealed class WindowConfig
+    {
+        public static WindowConfig Fixed(UnityEngine.Vector2Int size,Window.Position position)=>new WindowConfig();
+    }
+    public sealed class CustomWindowDefinition
+    {
+        public string Identifier,Title;
+        public WindowConfig Config;
+        public Action<UIPanelBuilder> BuilderAction;
+    }
     public sealed class WindowManager
     {
         public static WindowManager Shared=new WindowManager();public BuildState LastState;
+        public BuildState LastCustomState;
+        public readonly Dictionary<string,CustomWindowDefinition> CustomDefinitions=new Dictionary<string,CustomWindowDefinition>();
+        public readonly HashSet<string> OpenCustom=new HashSet<string>();
         public readonly UI.PreferencesWindow.PreferencesWindow Preferences=new UI.PreferencesWindow.PreferencesWindow();
         public T GetWindow<T>() where T:class=>Preferences as T;
+        public void RegisterCustomWindow(CustomWindowDefinition definition)=>CustomDefinitions.Add(definition.Identifier,definition);
+    }
+    public sealed class CustomWindowHandle
+    {
+        readonly string id;
+        CustomWindowHandle(string id){this.id=id;}
+        public static bool Exists(string id)=>WindowManager.Shared.CustomDefinitions.ContainsKey(id);
+        public static CustomWindowHandle Create(string id)=>new CustomWindowHandle(id);
+        public bool IsOpen()=>WindowManager.Shared.OpenCustom.Contains(id);
+        public void Close()=>WindowManager.Shared.OpenCustom.Remove(id);
+        public void Show()
+        {
+            var manager=WindowManager.Shared;
+            manager.OpenCustom.Add(id);
+            manager.LastCustomState=new BuildState();
+            manager.CustomDefinitions[id].BuilderAction(new UIPanelBuilder{State=manager.LastCustomState});
+        }
+        public void SetTitle(string title){}
     }
 }
 namespace EnusDE.Communications
 {
-    internal static class GameMenus {internal static bool IsOpen=>UI.Windows.WindowManager.Shared.Preferences.Window.IsShown;}
+    internal static class GameMenus
+    {
+        internal static bool IsOpen=>UI.Windows.WindowManager.Shared.Preferences.Window.IsShown||UI.Windows.WindowManager.Shared.OpenCustom.Count!=0;
+    }
 }

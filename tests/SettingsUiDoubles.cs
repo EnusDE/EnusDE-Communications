@@ -63,13 +63,19 @@ namespace UI.Builder
         public readonly Dictionary<string,Action<bool>> Toggles=new Dictionary<string,Action<bool>>();
         public readonly Dictionary<string,Action> Rebinds=new Dictionary<string,Action>();
         public readonly Dictionary<string,bool> Interactable=new Dictionary<string,bool>();
+        public Action<int> ChangeDropdown;
+        public int DropdownIndex;
     }
     public struct UIPanelBuilder
     {
+        public enum Frequency { Fast,Periodic }
         public BuildState State;
         public float FieldLabelWidth;
         public void AddExpandable(string label,UIState<bool> state,Action<UIPanelBuilder> content,ExpandableStyle style){State.Sections.Add(label);content(this);}
         public void AddLabel(string text){}
+        public void AddLabel(Func<string> text,Frequency updateFrequency){text();}
+        public void AddDropdown(List<string> values,int currentSelectedIndex,Action<int> onSelect)
+        {State.DropdownIndex=currentSelectedIndex;State.ChangeDropdown=onSelect;}
         public void Spacer(float height){}
         public void SetNeedsRebuild(){}
         public void VScrollView(Action<UIPanelBuilder> content){content(this);}
@@ -98,6 +104,11 @@ namespace EnusDE.Communications
     {
         public ModSettings Settings=new ModSettings();public TestText Text=new TestText();public TestLog Log=new TestLog();public TestRuntime Runtime=new TestRuntime();
         internal CommsBindings Bindings;public UnityEngine.InputSystem.InputAction Wheel=>Bindings.Wheel;public UnityEngine.InputSystem.InputAction OpenChat=>Bindings.OpenChat;public bool BindingConflict=>Settings.ChatBinding==Settings.WheelBinding;
+        public UnityEngine.InputSystem.InputAction VoiceTalk=>Bindings.VoiceTalk;
+        public bool VoiceBindingConflict=>false;
+        public string[] VoiceMicrophones=>new[]{"Test microphone"};
+        public string VoiceStatus=>"voice_off";
+        public Person[] VoicePeople=>Array.Empty<Person>();
         public Entry(){Bindings=new CommsBindings(Settings);}
         public Action OpenSettingsCallback;public void OpenSettings(){OpenSettingsCallback?.Invoke();}
         public void Save(bool refresh=true){Settings.Normalize();}

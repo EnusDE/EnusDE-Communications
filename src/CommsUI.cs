@@ -26,11 +26,13 @@ namespace EnusDE.Communications
         bool dispatchAsOperator;
         Button dispatchAcknowledge;
         RectTransform roleTestBar;TMP_Text roleTestLabel;
+        MicrophoneIcon microphoneIcon;
         internal double FadeClock {get;private set;}
         internal float Scale=>canvas!=null?canvas.scaleFactor:1;
         internal bool WheelOpen=>actionMenu?.Active==true;
         internal bool ChatShown=>runtime.IsRoleTest||ChatVisibility.IsVisible(GameAdapter.MultiplayerActive,drawMessages);
         internal bool Captures=>!runtime.DiagnosticSuspended&&(Dragging||WheelOpen||popup!=null||historyFocus||OwnTextFocused());
+        internal bool MicrophoneInputBlocked=>Captures||OtherTextFocused();
         string T(string key)=>entry.Text.Get(key);
         internal void Initialize(CommsRuntime owner)
         {
@@ -68,6 +70,22 @@ namespace EnusDE.Communications
             input=f.Input(inputBox,0,0,s.ChatWidth-70,32,T("write"),Submit);
             f.Button(inputBox,T("send"),s.ChatWidth-65,0,65,32,()=>Submit(input.text));inputBox.gameObject.SetActive(false);
             f.Button(bar,"Aa",s.ChatWidth-28,0,28,28,()=>FocusInput(),true);
+            if(!runtime.IsRoleTest)BuildMicrophone(bar,s.ChatWidth-56);
+        }
+
+        void BuildMicrophone(RectTransform bar,float x)
+        {
+            var button=f.Button(bar,"",x,0,28,28,()=>{
+                CancelWheel();
+                ClosePopup();
+                entry.ToggleVoiceSettings();
+            },true);
+            button.name="microphone settings";
+            microphoneIcon=f.Rect("microphone status",button.transform,2,2,24,24).gameObject.AddComponent<MicrophoneIcon>();
+            microphoneIcon.raycastTarget=false;
+            microphoneIcon.SetState(runtime.Voice?.Indicator??MicrophoneIndicator.Unavailable);
+            button.gameObject.AddComponent<UI.Tooltips.UITooltipProvider>().DynamicTooltipInfo=
+                ()=>new TooltipInfo(T("voice_window_title"),entry.VoiceStatus);
         }
         void BuildTop()
         {
@@ -191,6 +209,7 @@ namespace EnusDE.Communications
             if(entry.RoleTestActive&&!runtime.IsRoleTest||runtime.DiagnosticSuspended){canvas.enabled=false;if(toolbarCanvas!=null)toolbarCanvas.enabled=false;raycaster.enabled=false;if(toolbarRaycaster!=null)toolbarRaycaster.enabled=false;return;}
             using var measurement=entry.Performance.Measure(PerformanceStage.UI);
             // Native windows cover only their own area. Free chat controls remain interactive.
+            if(microphoneIcon!=null)microphoneIcon.SetState(runtime.Voice?.Indicator??MicrophoneIndicator.Unavailable);
             bool editing=entry.SettingsOpen;canvas.enabled=true;raycaster.enabled=true;canvas.sortingOrder=GameMenus.ChatOrder;
             if(editing)CancelWheel();
             bool reading=input!=null&&input.isFocused;
