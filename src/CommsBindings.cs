@@ -10,7 +10,7 @@ namespace EnusDE.Communications
     {
         internal readonly InputActionAsset Asset;
         internal readonly InputActionMap Map;
-        internal readonly InputAction Wheel,OpenChat;
+        internal readonly InputAction Wheel,OpenChat,VoiceTalk;
         sealed class BoundButton {internal string Path;internal ButtonControl[] Controls=Array.Empty<ButtonControl>();internal int RetryFrame,Revision;internal readonly ButtonEdges Edges=new ButtonEdges();}
         readonly Dictionary<InputAction,BoundButton> buttons=new Dictionary<InputAction,BoundButton>();
         int deviceRevision;
@@ -27,7 +27,7 @@ namespace EnusDE.Communications
                 return path.StartsWith("<Keyboard>",StringComparison.OrdinalIgnoreCase)&&slash>=0&&path.Length>slash+2&&(path[slash+1]=='f'||path[slash+1]=='F')&&Int32.TryParse(path.Substring(slash+2),out number)&&number>=1&&number<=24;
             }
         }
-        internal void Sample(int frame,bool focused){Sample(Wheel,frame,focused);Sample(OpenChat,frame,focused);}
+        internal void Sample(int frame,bool focused){Sample(Wheel,frame,focused);Sample(OpenChat,frame,focused);Sample(VoiceTalk,frame,focused);}
         void Sample(InputAction action,int frame,bool focused)
         {
             string path=action.bindings.Count>0?action.bindings[0].effectivePath??"":"";BoundButton bound;
@@ -48,6 +48,7 @@ namespace EnusDE.Communications
             Map=new InputActionMap("EnusDE Communications");Asset.AddActionMap(Map);
             Wheel=Map.AddAction("Communication wheel",InputActionType.Button);Wheel.AddBinding(settings.WheelBinding);
             OpenChat=Map.AddAction("Open chat",InputActionType.Button);OpenChat.AddBinding(settings.ChatBinding??"");
+            VoiceTalk=Map.AddAction("Push to talk",InputActionType.Button);VoiceTalk.AddBinding(settings.VoiceBinding??"");
             InputSystem.onDeviceChange+=DevicesChanged;
         }
         public void Dispose(){InputSystem.onDeviceChange-=DevicesChanged;if(Asset!=null){Asset.Disable();UnityEngine.Object.Destroy(Asset);}}

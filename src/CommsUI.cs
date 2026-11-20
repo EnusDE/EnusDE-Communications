@@ -25,7 +25,7 @@ namespace EnusDE.Communications
         public bool Dragging;
         bool dispatchAsOperator;
         Button dispatchAcknowledge;
-        RectTransform roleTestBar;TMP_Text roleTestLabel;
+        RectTransform roleTestBar;TMP_Text roleTestLabel,voiceLabel;
         internal double FadeClock {get;private set;}
         internal float Scale=>canvas!=null?canvas.scaleFactor:1;
         internal bool WheelOpen=>actionMenu?.Active==true;
@@ -71,7 +71,7 @@ namespace EnusDE.Communications
         }
         void BuildTop()
         {
-            if(!runtime.IsRoleTest)BuildToolbarIcon();else BuildRoleTestBar();drawMessages=entry.Settings.ChatVisible;status=f.Text(root,"",16,48,650,50,15);
+            if(!runtime.IsRoleTest)BuildToolbarIcon();else BuildRoleTestBar();drawMessages=entry.Settings.ChatVisible;status=f.Text(root,"",16,48,650,50,15);voiceLabel=f.Text(root,"",16,108,750,26,14);voiceLabel.raycastTarget=false;
         }
         void BuildToolbarIcon()
         {
@@ -191,6 +191,7 @@ namespace EnusDE.Communications
             if(entry.RoleTestActive&&!runtime.IsRoleTest||runtime.DiagnosticSuspended){canvas.enabled=false;if(toolbarCanvas!=null)toolbarCanvas.enabled=false;raycaster.enabled=false;if(toolbarRaycaster!=null)toolbarRaycaster.enabled=false;return;}
             using var measurement=entry.Performance.Measure(PerformanceStage.UI);
             // Native windows cover only their own area. Free chat controls remain interactive.
+            if(voiceLabel!=null)voiceLabel.text=!runtime.IsRoleTest&&entry.Settings.VoiceEnabled?entry.VoiceStatus:"";
             bool editing=entry.SettingsOpen;canvas.enabled=true;raycaster.enabled=true;canvas.sortingOrder=GameMenus.ChatOrder;
             if(editing)CancelWheel();
             bool reading=input!=null&&input.isFocused;

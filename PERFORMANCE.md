@@ -1,10 +1,10 @@
-# MP-Hänger untersuchen — Communications 0.6.7 (Funktion seit 0.6.5)
+# MP-Hänger untersuchen — Communications 0.6.8 (Funktion seit 0.6.5)
 
 Die Leistungsdiagnose zeichnet Bildabstände und Chat-Verarbeitungszeiten auf. Sie ist beim Host und beim Mitspieler verfügbar.
 
 ## Ein kurzer Test pro betroffenem PC
 
-1. Mit geschlossenem Spiel 0.6.7 wie in der [Installationsanleitung](README.md#install) installieren. Einstellungen und Data erhalten. Host und Mitspieler verwenden für diesen Vergleich dieselbe Fassung.
+1. Mit geschlossenem Spiel 0.6.8 wie in der [Installationsanleitung](README.md#install) installieren. Einstellungen und Data erhalten. Host und Mitspieler verwenden für diesen Vergleich dieselbe Fassung.
 2. Der MP-Sitzung beitreten beziehungsweise sie hosten. Unter **Spieloptionen → Mods → EnusDE Communications → Leistungsdiagnose** auf **60 Sekunden Leistungsmessung starten** klicken.
 3. Menü schließen. Etwa 15 Sekunden wie bisher laufen, die Kamera drehen oder einen fahrenden Zug beobachten.
 4. Dieselben Einstellungen erneut öffnen und **Chat 10 Sekunden pausieren** anklicken. Das Einstellungsfenster schließt; der lokale Chat verschwindet für zehn Sekunden und läuft anschließend automatisch weiter. In dieser Zeit dieselbe Bewegung wiederholen und darauf achten, ob die Stopps ausbleiben. Beim Host pausiert auch die Mod-Chat-Zustellung an Mitspieler; während des Vergleichs keine Nachrichten senden.

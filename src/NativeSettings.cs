@@ -63,10 +63,35 @@ namespace EnusDE.Communications
             b.AddLabel(T("wheel_hint"));b.AddField(T("whistle_volume"),b.AddSlider(()=>entry.Settings.WhistleVolume,()=>((int)(entry.Settings.WhistleVolume*100))+"%",value=>{entry.Settings.WhistleVolume=value;entry.Save();},0,1,false,null));
             b.AddLabel(T("language_hint"));
             b.AddLabel(T("settings_location")+": ModSettings/enusde-communications.json");
+            b.Spacer(8);b.AddLabel(T("voice_title"));b.AddLabel(T("voice_hint"));
+            b.FieldLabelWidth=28;
+            b.AddFieldToggle(T("voice_enable"),()=>entry.Settings.VoiceEnabled,value=>{entry.Settings.VoiceEnabled=value;entry.Save();b.SetNeedsRebuild();},interactable:true);
+            b.AddLabel(entry.VoiceStatus);
+            b.AddLabel(T("voice_microphone")+": "+(String.IsNullOrEmpty(entry.Settings.VoiceMicrophone)?T("voice_default_device"):entry.Settings.VoiceMicrophone));
+            b.AddButton(T("voice_next_microphone"),()=>{
+                string[] devices=new[]{""}.Concat(entry.VoiceMicrophones).Distinct().ToArray();
+                int index=Array.IndexOf(devices,entry.Settings.VoiceMicrophone);
+                entry.Settings.VoiceMicrophone=devices[(index+1)%devices.Length];entry.Save();b.SetNeedsRebuild();
+            });
+            b.AddLabel(T("voice_binding"));b.AddInputBindingControl(entry.VoiceTalk,entry.VoiceBindingConflict,()=>{entry.Settings.VoiceBinding=entry.VoiceTalk.bindings[0].effectivePath??"";entry.Save();b.SetNeedsRebuild();});
+            b.FieldLabelWidth=170;
+            b.AddField(T("voice_volume"),b.AddSlider(()=>entry.Settings.VoiceVolume,()=>((int)(entry.Settings.VoiceVolume*100))+"%",value=>{entry.Settings.VoiceVolume=value;entry.Save();},0,1,false,null));
+            b.AddField(T("voice_gain"),b.AddSlider(()=>entry.Settings.VoiceGain,()=>((int)(entry.Settings.VoiceGain*100))+"%",value=>{entry.Settings.VoiceGain=value;entry.Save();},0,2,false,null));
+            b.FieldLabelWidth=28;
+            foreach(var person in entry.VoicePeople)
+            {
+                string id=person.Id;
+                b.AddFieldToggle(T("voice_mute")+": "+person.Name+" ("+id+")",()=>entry.Settings.VoiceMuted.Contains(id),value=>{entry.Settings.VoiceMuted=Set(entry.Settings.VoiceMuted,id,value);entry.Save();},interactable:true);
+            }
             b.Spacer(8);b.AddLabel(T("performance_title"));b.AddLabel(T("performance_hint"));
             b.AddButton(T(entry.PerformanceRecording?"performance_stop":"performance_start"),()=>{entry.TogglePerformanceCapture();b.SetNeedsRebuild();});
             if(entry.CanDiagnosticPause)b.AddButton(T("performance_pause"),()=>entry.PauseForDiagnosis());
             if(!GameAdapter.IsHost)return;
+            b.Spacer(8);b.AddLabel(T("voice_host_title"));b.FieldLabelWidth=28;
+            b.AddFieldToggle(T("voice_host_allow"),()=>entry.Settings.Host.VoiceAllowed,value=>{if(!GameAdapter.IsHost)return;entry.Settings.Host.VoiceAllowed=value;entry.Save();b.SetNeedsRebuild();},interactable:true);
+            b.FieldLabelWidth=170;
+            b.AddField(T("voice_range"),b.AddSliderQuantized(()=>entry.Settings.VoiceRange,()=>entry.Settings.VoiceRange.ToString("0")+" m",value=>{if(!GameAdapter.IsHost)return;entry.Settings.VoiceRange=value;entry.Save();},increment:5,minValue:5,maxValue:100,editingEndedAction:null));
+
             b.Spacer(8);b.AddLabel(T("test_title"));b.AddLabel(T("test_hint"));
             if(!entry.RoleTestActive)b.AddButton(T("test_open"),entry.StartRoleTest);
             else

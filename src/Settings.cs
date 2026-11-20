@@ -13,6 +13,11 @@ namespace EnusDE.Communications
         public bool ChatVisible=true,AutoDock=true,ShowTimestamps=true,ShowDeskShortcut=true;
         public string WheelBinding="<Keyboard>/f10";
         public string ChatBinding="";
+        // Personal opt-in; absence in older settings means disabled.
+        public bool VoiceEnabled=false;
+        public string VoiceMicrophone="",VoiceBinding="";
+        public float VoiceVolume=1,VoiceGain=1,VoiceRange=40;
+        public string[] VoiceMuted=new string[0];
         public HostPolicy Host=new HostPolicy();
         public void Normalize()
         {
@@ -22,6 +27,10 @@ namespace EnusDE.Communications
             BackgroundOpacity=Bound(BackgroundOpacity,0,0,1);BackgroundR=Bound(BackgroundR,.1f,0,1);BackgroundG=Bound(BackgroundG,.11f,0,1);BackgroundB=Bound(BackgroundB,.085f,0,1);
             if(String.IsNullOrWhiteSpace(WheelBinding)||WheelBinding.Length>160)WheelBinding="<Keyboard>/f10";
             if(ChatBinding==null||ChatBinding.Length>160)ChatBinding="";
+            if(VoiceMicrophone==null||VoiceMicrophone.Length>256)VoiceMicrophone="";
+            if(VoiceBinding==null||VoiceBinding.Length>160)VoiceBinding="";
+            VoiceVolume=Bound(VoiceVolume,1,0,1);VoiceGain=Bound(VoiceGain,1,0,2);VoiceRange=Bound(VoiceRange,40,5,100);
+            if(VoiceMuted==null)VoiceMuted=new string[0];
             if(Host==null)Host=new HostPolicy();
             if(Host.AdminRanks==null)Host.AdminRanks=new string[0];if(Host.DispatcherRanks==null)Host.DispatcherRanks=new[]{"Dispatcher"};
         }

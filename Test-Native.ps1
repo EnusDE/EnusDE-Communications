@@ -26,7 +26,7 @@ $sdk=& dotnet --list-sdks | Select-Object -Last 1;if($sdk -notmatch '^([^ ]+) \[
 $compiler=Join-Path (Join-Path $Matches[2] $Matches[1]) 'Roslyn\bincore\csc.dll'
 & dotnet exec $compiler '/noconfig' ('@'+$response);if($LASTEXITCODE -ne 0){throw 'Native smoke companion failed to compile.'}
 @{identifier='enusde/communications-smoke';version=$manifest.version;name='Communications isolated smoke test';scope='optional';assemblies=@('NativeSmoke.dll');dependencies=@{required=@('enusde/communications =='+$manifest.version)}}|ConvertTo-Json -Depth 5|Set-Content -LiteralPath (Join-Path $companion 'Info.json')
-@{version=1;mods=$enabled;clientMods=@();settings=@{'mods.allow-dll'=1;'prefs.version'='0.6.2';'http.server.enabled'=0}}|ConvertTo-Json -Depth 6|Set-Content -LiteralPath (Join-Path $profile 'Preferences.json')
+@{version=1;mods=$enabled;clientMods=@();settings=@{'mods.allow-dll'=1;'prefs.version'='0.6.3';'http.server.enabled'=0}}|ConvertTo-Json -Depth 6|Set-Content -LiteralPath (Join-Path $profile 'Preferences.json')
 $log=Join-Path $smoke 'Player.log'
 $process=Start-Process -FilePath (Join-Path $GameDirectory 'Railroader.exe') -WorkingDirectory $GameDirectory -ArgumentList @('-batchmode','-nographics','-homedir',('"'+$profile+'"'),'-logFile',('"'+$log+'"')) -WindowStyle Hidden -PassThru
 $deadline=[DateTime]::UtcNow.AddSeconds(90)

@@ -21,6 +21,8 @@ namespace EnusDE.Communications
         internal bool IsRoleTest=>RoleTest!=null;
         HostRouter host;
         SteamTransport transport;
+        internal VoiceRuntime Voice;
+        internal bool VoiceCompatible(ulong id)=>host?.HasCompatibleClient(id.ToString(CultureInfo.InvariantCulture))==true;
         float nextRefresh,nextHello,nextPing;
         double lastResponse;
         readonly Dictionary<string,double> pending=new Dictionary<string,double>();
@@ -43,7 +45,7 @@ namespace EnusDE.Communications
             Entry=entry;Client=new ClientSession();WireClient();startedAt=lastResponse=Time.realtimeSinceStartupAsDouble;
             View=Snapshot();
             EnsureHost();
-            UI=gameObject.AddComponent<CommsUI>();UI.Initialize(this);CreateWhistle();
+            UI=gameObject.AddComponent<CommsUI>();UI.Initialize(this);CreateWhistle();Voice=new VoiceRuntime(this);
         }
         internal void BeginRoleTest(Entry entry,WorldView source,string train)
         {
@@ -142,10 +144,10 @@ namespace EnusDE.Communications
         }
         void Update()
         {
-            if(!Active)return;
+            if(!Active){Voice?.Dispose();return;}
             if(IsRoleTest){Entry.KeepBindingsEnabled(this);if(Time.realtimeSinceStartup>=nextPing){RoleTest.Tick();nextPing=Time.realtimeSinceStartup+4;}return;}
             if(Entry.Performance.NextFrame(Time.frameCount,GameAdapter.IsHost,Client.Connected,DiagnosticSuspended))Entry.ExportPerformance();
-            if(DiagnosticSuspended)return;
+            if(DiagnosticSuspended){Voice?.Dispose();return;}
             using var measurement=Entry.Performance.Measure(PerformanceStage.Update);
             if(diagnosticPauseUntil>0){diagnosticPauseUntil=0;UI.Toast(Entry.Text.Get("performance_resumed"));Entry.Log.Info("Diagnostic chat pause ended; normal processing resumed.");}
             try
@@ -161,6 +163,7 @@ namespace EnusDE.Communications
                 {lastResponse=Time.realtimeSinceStartupAsDouble;if(now>=nextRefresh){RefreshLanguage();nextRefresh=now+2;}return;}
                 if(now>=nextRefresh){View=Snapshot();if(host!=null){host.Policy=Entry.Settings.Host;host.Refresh(View);}RefreshLanguage();nextRefresh=now+(multiplayer ? .5f : 1f);}
                 if(multiplayer)transport?.Poll();
+                Voice?.Tick();
                 if(!Client.Connected&&now>=nextHello){Send(Client.Request("hello"));nextHello=now+(HostUnavailable?10:2);}
                 if(Client.Connected&&now>=nextPing){Send(Client.Request("ping"));nextPing=now+4;}
                 if(Client.Connected&&Time.realtimeSinceStartupAsDouble-lastResponse>18)
@@ -195,6 +198,6 @@ namespace EnusDE.Communications
             var position=new Vector3(record.X,record.Y,record.Z);if(Vector3.Distance(position,new Vector3(local.X,local.Y,local.Z))>80)return;
             var sound=new GameObject("EnusDE whistle");sound.transform.position=Helpers.WorldTransformer.GameToWorld(position);var source=sound.AddComponent<AudioSource>();source.clip=whistle;source.spatialBlend=1;source.rolloffMode=AudioRolloffMode.Linear;source.minDistance=4;source.maxDistance=80;source.volume=Entry.Settings.WhistleVolume;source.Play();Destroy(sound,1.2f);
         }
-        void OnDestroy(){transport?.Dispose();transport=null;if(whistle!=null)Destroy(whistle);}
+        void OnDestroy(){Voice?.Dispose();Voice=null;transport?.Dispose();transport=null;if(whistle!=null)Destroy(whistle);}
     }
 }

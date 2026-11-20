@@ -1,4 +1,4 @@
-# Host-Rollentest — Communications 0.6.7
+# Host-Rollentest — Communications 0.6.8
 
 Der Host kann die Kommunikation selbst aus TF-, FDL- und Admin-Sicht testen, obwohl sein echter Spieler als Inhaber immer Verwaltungsrechte hat.
 

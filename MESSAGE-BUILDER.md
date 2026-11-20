@@ -1,6 +1,6 @@
-# Kommunikation und Bausteine — Testversion 0.6.7
+# Kommunikation und Bausteine — Testversion 0.6.8
 
-Für Railroader 0.6.2. Host und Chatnutzer verwenden gemeinsam **Communications 0.6.7 / Chat-Protokoll 4**. Ältere Chat-Versionen verbinden ihren Chat nicht mit dieser Fassung. Die native Spielteilnahme ohne Mod bleibt erlaubt. Data und ModSettings beim Update erhalten.
+Für Railroader 0.6.3. Host und Chatnutzer verwenden gemeinsam **Communications 0.6.8 / Chat-Protokoll 4**. Ältere Chat-Versionen verbinden ihren Chat nicht mit dieser Fassung. Die native Spielteilnahme ohne Mod bleibt erlaubt. Data und ModSettings beim Update erhalten.
 
 ## Die vier Kommunikationswege
 

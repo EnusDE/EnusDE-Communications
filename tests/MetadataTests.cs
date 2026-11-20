@@ -23,15 +23,15 @@ static class MetadataTests
                 bool found=field?definition.GetFields().Any(h=>md.GetString(md.GetFieldDefinition(h).Name)==name):definition.GetMethods().Any(h=>md.GetString(md.GetMethodDefinition(h).Name)==name);
                 check(found,"Missing native member "+type+"."+name);
             };
-            test("actual 0.6.2 game build and private integration members",()=>{
-                check(md.GetGuid(md.GetModuleDefinition().Mvid)==new Guid("5a60632d-406b-4972-b216-2484a9007d35"),"Unexpected game build");
+            test("actual 0.6.3 game build and private integration members",()=>{
+                check(md.GetGuid(md.GetModuleDefinition().Mvid)==new Guid("aac29a8a-ef90-41c1-b17a-0d75169dc6b8"),"Unexpected game build");
                 member("UI.GameInput","_focusPause",true);member("UI.GameInput","Update",false);member("UI.Common.EscapeHandler","HandleEscape",false);
                 member("Game.HostManager","_clients",true);member("Game.HostManager","AccessLevelForPlayerId",false);member("Game.HostManager+Client","Status",true);member("Game.HostManager+Client","get_PlayerId",false);
                 member("Network.Client.ClientManager","_client",true);member("Network.Client.GameClient","get_ConnectionInfo",false);
                 member("Network.Steam.SteamClient","Update",false);
                 member("Network.Steam.SteamServer","Update",false);
                 member("Helpers.WorldTransformer","GameToWorld",false);
-                member("Game.UserPaths","get_RailroaderDirectory",false);member("Game.State.PlayerPropertiesManager","_object",true);
+                member("Game.HomeDirectory.UserPaths","get_RailroaderDirectory",false);member("Game.State.PlayerPropertiesManager","_object",true);
                 member("UI.EngineControls.LocomotiveControlsUIAdapter","nameLabel",true);member("UI.EngineControls.LocomotiveControlsUIAdapter","get_Locomotive",false);member("UI.TopRightArea","clockText",true);
                 member("Game.State.StateManager","HandleCharacterMessage",false);member("Game.HostManager","SendTo",false);member("Network.Multiplayer","get_Mode",false);
                 member("UI.Windows.WindowManager","RegisterCustomWindow",false);member("UI.Windows.CustomWindowHandle","Create",false);member("Track.Signals.CTCPanelButton","Activate",false);
@@ -63,7 +63,7 @@ static class MetadataTests
         test("standalone manifest has no translator dependency",()=>{
             var manifest=Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(Path.Combine(project,"EnusDE-Communications","Info.json")));
             var required=manifest["dependencies"]["required"].Select(x=>(string)x).ToArray();
-            check(required.SequenceEqual(new[]{"rr/game ==0.6.2"}),"Only the game may be a required dependency");
+            check(required.SequenceEqual(new[]{"rr/game ==0.6.3"}),"Only the game may be a required dependency");
             check(manifest["dependencies"]["optional"]==null,"Translator must not be a dependency");
             check((string)manifest["scope"]=="optional","Players without the mod must be allowed to join");
         });

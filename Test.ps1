@@ -49,3 +49,12 @@ $transportResponse=Join-Path $testBuild 'transport-tests.rsp';[IO.File]::WriteAl
 & dotnet exec $compiler '/noconfig' ('@'+$transportResponse);if($LASTEXITCODE -ne 0){throw 'Transport test compilation failed.'}
 [IO.File]::WriteAllText((Join-Path $testBuild 'TransportTests.runtimeconfig.json'),$runtime)
 & dotnet $transportExe;if($LASTEXITCODE -ne 0){throw 'Transport regression tests failed.'}
+
+$voiceExe=Join-Path $testBuild 'VoiceSessionTests.dll'
+$voiceArguments=@($arguments | Where-Object {$_ -notmatch '^".*\.cs"$' -and $_ -notmatch '^/out:'})
+$voiceArguments+='/out:"'+$voiceExe+'"'
+foreach($name in @('src\Domain.cs','src\MessageTemplates.cs','src\Settings.cs','src\VoiceSession.cs','src\VoiceAudio.cs','src\VoiceWire.cs','src\VoiceTransport.cs','src\VoiceRuntime.cs','tests\TransportDoubles.cs','tests\VoiceRuntimeDoubles.cs','tests\VoiceRuntimeTests.cs','tests\VoiceSessionTests.cs')){$voiceArguments+='"'+(Join-Path $PSScriptRoot $name)+'"'}
+$voiceResponse=Join-Path $testBuild 'voice-tests.rsp';[IO.File]::WriteAllLines($voiceResponse,$voiceArguments,[Text.UTF8Encoding]::new($false))
+& dotnet exec $compiler '/noconfig' ('@'+$voiceResponse);if($LASTEXITCODE -ne 0){throw 'Voice boundary test compilation failed.'}
+[IO.File]::WriteAllText((Join-Path $testBuild 'VoiceSessionTests.runtimeconfig.json'),$runtime)
+& dotnet $voiceExe;if($LASTEXITCODE -ne 0){throw 'Voice boundary tests failed.'}

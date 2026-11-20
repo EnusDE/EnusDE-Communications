@@ -98,6 +98,11 @@ namespace EnusDE.Communications
     {
         public ModSettings Settings=new ModSettings();public TestText Text=new TestText();public TestLog Log=new TestLog();public TestRuntime Runtime=new TestRuntime();
         internal CommsBindings Bindings;public UnityEngine.InputSystem.InputAction Wheel=>Bindings.Wheel;public UnityEngine.InputSystem.InputAction OpenChat=>Bindings.OpenChat;public bool BindingConflict=>Settings.ChatBinding==Settings.WheelBinding;
+        public UnityEngine.InputSystem.InputAction VoiceTalk=>Bindings.VoiceTalk;
+        public bool VoiceBindingConflict=>false;
+        public string[] VoiceMicrophones=>new[]{"Test microphone"};
+        public string VoiceStatus=>"voice_off";
+        public Person[] VoicePeople=>Array.Empty<Person>();
         public Entry(){Bindings=new CommsBindings(Settings);}
         public Action OpenSettingsCallback;public void OpenSettings(){OpenSettingsCallback?.Invoke();}
         public void Save(bool refresh=true){Settings.Normalize();}
