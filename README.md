@@ -4,11 +4,11 @@
 
 EnusDE Communications adds in-game text chat and railroad operating messages to **Railroader 0.6.3**. It includes global, crew and train channels, two-way dispatcher conversations, reusable message templates, and an F10 shunting wheel. You can configure the chat HUD and message fading in the game's preferences.
 
-**Development status** · 0.6.9 is a test update for cached optional translator discovery and local builds. It uses the tested 0.6.8 source for Railroader 0.6.3, including experimental, default-off proximity voice. Live verification of the stutter fix is pending.
+**Development status** · 0.6.10 is a test update for cached optional translator discovery and local builds. It uses the tested 0.6.8 source for Railroader 0.6.3, including experimental, default-off proximity voice. Live verification of the stutter fix is pending.
 
 ## Install
 
-1. Close Railroader and use the supplied `EnusDE-Communications-v0.6.9.zip` test package for Railroader 0.6.3.
+1. Close Railroader and use the supplied `EnusDE-Communications-v0.6.10.zip` test package for Railroader 0.6.3.
 2. Extract the ZIP and copy the `EnusDE-Communications` folder into your Railroader `Mods` folder. The usual location is `Documents\Railroader\Mods`. Use your actual Railroader home directory if you have redirected Documents or configured a custom location.
 3. Enable DLL mods in Railroader's experimental settings if needed. Restart the game and activate **EnusDE Communications**.
 4. Load a world and open **Preferences → Mods → EnusDE Communications**. To use the chat in singleplayer, enable **Show chat in singleplayer**.
@@ -20,7 +20,7 @@ When updating, replace the existing mod files and keep the mod's `Data` folder a
 - Railroader **0.6.3** with native DLL mods enabled.
 - Harmony **2.3.6**, included in the install ZIP.
 - [EnusDE Translation](https://www.nexusmods.com/railroader/mods/1991) is optional and supplies the selected language. Communications includes its own English and German text and defaults to English. A separate mod menu is unnecessary.
-- For this development build, the host and voice participants should use **Communications 0.6.9** (chat protocol 4; separate voice protocol 1). Players who do not install Communications can still join and use the game's normal console.
+- For this development build, the host and voice participants should use **Communications 0.6.10** (chat protocol 4; separate voice protocol 1). Players who do not install Communications can still join and use the game's normal console.
 
 ## Use the chat
 
@@ -41,7 +41,7 @@ Voice travels through the host on a separate Steam channel. Only opted-in partic
 
 - [Build and test from source](BUILDING.md)
 - [Local and Cloud workflow](WORKFLOW.md)
-- [0.6.9 test release notes / Versionshinweise](RELEASE-NOTES-0.6.9.md)
+- [0.6.10 test release notes / Versionshinweise](RELEASE-NOTES-0.6.10.md)
 - [Message templates and dispatcher chat (German)](MESSAGE-BUILDER.md)
 - [Host role test (German)](ROLE-TEST.md)
 - [Performance capture (German)](PERFORMANCE.md)
@@ -50,4 +50,4 @@ Created by EnusDE with AI assistance. The mod source is [MIT licensed](LICENSE).
 
 ## Deutsche Zusammenfassung
 
-EnusDE Communications ergänzt **Railroader 0.6.3** um Global-, Mannschafts- und Zugchat, FDL-Gespräche, Nachrichtenbausteine und ein F10-Rangierrad. Kopiere den Ordner `EnusDE-Communications` aus dem Testpaket `EnusDE-Communications-v0.6.9.zip` in deinen Railroader-Mods-Ordner und aktiviere die Mod. Die Einstellungen findest du unter **Spieloptionen → Mods → EnusDE Communications**. Harmony liegt bei. EnusDE Translation ist optional. **0.6.9 behebt die wiederholte globale Typensuche bei fehlendem Übersetzer.** Der Leistungseffekt im Spiel bleibt zu prüfen. Die Umgebungssprache startet nach jedem Weltladen ausgeschaltet. Für künftige lokale Builds **Build-Local.cmd** im Quellordner doppelt anklicken. Die gemeinsame Arbeit mit dem Cloud-Chat ist in [WORKFLOW.md](WORKFLOW.md) erklärt.
+EnusDE Communications ergänzt **Railroader 0.6.3** um Global-, Mannschafts- und Zugchat, FDL-Gespräche, Nachrichtenbausteine und ein F10-Rangierrad. Kopiere den Ordner `EnusDE-Communications` aus dem Testpaket `EnusDE-Communications-v0.6.10.zip` in deinen Railroader-Mods-Ordner und aktiviere die Mod. Die Einstellungen findest du unter **Spieloptionen → Mods → EnusDE Communications**. Harmony liegt bei. EnusDE Translation ist optional. **0.6.10 behebt die wiederholte globale Typensuche bei fehlendem Übersetzer.** Der Leistungseffekt im Spiel bleibt zu prüfen. Die Umgebungssprache startet nach jedem Weltladen ausgeschaltet. Für künftige lokale Builds **Build-Local.cmd** im Quellordner doppelt anklicken. Die gemeinsame Arbeit mit dem Cloud-Chat ist in [WORKFLOW.md](WORKFLOW.md) erklärt.

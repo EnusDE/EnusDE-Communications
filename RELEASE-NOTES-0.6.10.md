@@ -1,6 +1,6 @@
 ## English
 
-**Test update for Railroader 0.6.3**
+**Version 0.6.10 — test update for Railroader 0.6.3**
 
 - Cache unsuccessful optional translator discovery. Language refreshes use exact type lookup and retry after a new assembly loads.
 - Release the assembly-load subscription when Communications unloads. English fallback and late translator activation remain supported.
@@ -11,7 +11,7 @@ This update is based on the tested 0.6.8 package for Railroader 0.6.3. The newer
 
 ## Deutsch
 
-**Testupdate für Railroader 0.6.3**
+**Version 0.6.10 — Testupdate für Railroader 0.6.3**
 
 - Erfolglose Erkennung des optionalen Übersetzers wird gespeichert. Die Spracherkennung sucht gezielt nach dem Typ und prüft nach dem Laden einer neuen Bibliothek erneut.
 - Beim Entladen wird die Ereignisanmeldung entfernt. Englisch als Rückfall und das spätere Aktivieren des Übersetzers bleiben erhalten.

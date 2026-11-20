@@ -23,7 +23,7 @@ $modStage=Join-Path $staging 'EnusDE-Communications';$null=New-Item -ItemType Di
 Copy-Item -LiteralPath (Join-Path $pack 'Info.json') -Destination $modStage
 Copy-Item -LiteralPath (Join-Path $pack 'Languages') -Destination $modStage -Recurse
 Copy-Item -LiteralPath $dll,$harmony -Destination $modStage
-$modDocuments=@('README.md','BUILDING.md','WORKFLOW.md','PERFORMANCE.md','MESSAGE-BUILDER.md','ROLE-TEST.md','VOICE.md','RELEASE-NOTES-0.6.9.md','LICENSE','THIRD-PARTY-NOTICES.txt')
+$modDocuments=@('README.md','BUILDING.md','WORKFLOW.md','PERFORMANCE.md','MESSAGE-BUILDER.md','ROLE-TEST.md','VOICE.md','RELEASE-NOTES-0.6.10.md','LICENSE','THIRD-PARTY-NOTICES.txt')
 foreach($name in $modDocuments){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination $modStage}
 $binaryZip=Join-Path $OutputDirectory ('EnusDE-Communications-v'+$manifest.version+'.zip');Compress-Archive -LiteralPath $modStage -DestinationPath $binaryZip -Force
 $sourceStage=Join-Path $staging 'EnusDE-Communications-Source';$null=New-Item -ItemType Directory -Path $sourceStage -Force
